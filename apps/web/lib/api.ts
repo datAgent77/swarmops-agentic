@@ -88,6 +88,29 @@ export type RiskAssessment = {
   created_at: string;
 };
 
+export type PolicyAction =
+  | "ALLOW"
+  | "DENY"
+  | "REQUIRE_APPROVAL"
+  | "QUARANTINE"
+  | "REDACT"
+  | "LOG_ONLY";
+
+export type Policy = {
+  id: string;
+  name: string;
+  description: string;
+  scope: string;
+  priority: number;
+  condition: Record<string, unknown>;
+  action: PolicyAction;
+  parameters: Record<string, unknown>;
+  enabled: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type FleetStats = {
   total_agents: number;
   active: number;
@@ -131,6 +154,10 @@ export function fetchAgents(filters: AgentFilters = {}) {
 
 export function fetchAgent(id: string) {
   return getJSON<AgentDetail>(`/api/v1/agents/${id}`);
+}
+
+export function fetchPolicies() {
+  return getJSON<Policy[]>("/api/v1/policies");
 }
 
 export async function fetchRisk(agentId: string): Promise<RiskAssessment | null> {

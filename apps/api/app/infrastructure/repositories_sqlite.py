@@ -13,6 +13,7 @@ from app.domain.models import (
     AgentDependency,
     AgentVersion,
     Organization,
+    Policy,
     RiskAssessment,
     Tool,
     User,
@@ -23,6 +24,7 @@ from app.domain.repositories import (
     AgentVersionRepository,
     DependencyRepository,
     OrganizationRepository,
+    PolicyRepository,
     RiskAssessmentRepository,
     ToolRepository,
     UserRepository,
@@ -236,6 +238,38 @@ class SqliteDependencyRepository(_Base, DependencyRepository):
         return [AgentDependency.model_validate(dict(r)) for r in rows]
 
 
+class SqlitePolicyRepository(_Base, PolicyRepository):
+    def _to_model(self, row: sqlite3.Row) -> Policy:
+        data = dict(row)
+        data["condition"] = json.loads(data["condition"])
+        data["parameters"] = json.loads(data["parameters"])
+        data["enabled"] = bool(data["enabled"])
+        return Policy.model_validate(data)
+
+    def add(self, p: Policy) -> None:
+        self._write(
+            "INSERT OR REPLACE INTO policies (id, name, description, scope, priority, condition, "
+            "action, parameters, enabled, created_by, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                p.id, p.name, p.description, p.scope, p.priority, _dumps(p.condition),
+                p.action.value, _dumps(p.parameters), int(p.enabled), p.created_by,
+                p.created_at.isoformat(), p.updated_at.isoformat(),
+            ),
+        )
+
+    def update(self, policy: Policy) -> None:
+        self.add(policy)
+
+    def get(self, policy_id: str) -> Policy | None:
+        row = self._c.execute("SELECT * FROM policies WHERE id=?", (policy_id,)).fetchone()
+        return self._to_model(row) if row else None
+
+    def list(self) -> Sequence[Policy]:
+        rows = self._c.execute("SELECT * FROM policies ORDER BY priority ASC").fetchall()
+        return [self._to_model(r) for r in rows]
+
+
 class SqliteRiskAssessmentRepository(_Base, RiskAssessmentRepository):
     _COLUMNS = (
         "id, agent_id, agent_version_id, overall_score, severity, pii_score, financial_score, "
@@ -280,5 +314,6 @@ __all__ = [
     "SqliteAgentVersionRepository",
     "SqliteToolRepository",
     "SqliteDependencyRepository",
+    "SqlitePolicyRepository",
     "SqliteRiskAssessmentRepository",
 ]

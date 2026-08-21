@@ -33,7 +33,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P00 | Repository Foundation & Architecture | ✅ complete |
 | P01 | Domain Model, Repositories & Demo Data | ✅ complete |
 | P02 | Deterministic Risk Engine | ✅ complete |
-| P03 | Policy Engine & Governance Rules | ⬜ pending |
+| P03 | Policy Engine & Governance Rules | ✅ complete |
 | P04 | Execution State Machine & Safe Tool Layer | ⬜ pending |
 | P05 | Human Approval Workflow | ⬜ pending |
 | P06 | Quarantine, Discovery & Governance Lifecycle | ⬜ pending |
@@ -104,3 +104,26 @@ repository state — **preserve working functionality; do not rewrite from scrat
 
 > **Invariant reinforced:** the engine is the sole authority on risk. Gemini (P07)
 > will explain but never alter a score, severity, or recommended action.
+
+## P03 — delivered
+
+- Deterministic policy engine (`domain/policy_engine.py`): JSON conditions with a
+  fixed operator whitelist (eq, neq, gt, gte, lt, lte, in, contains, exists) plus
+  `all`/`any` groups. **No `eval`/`exec`** — every value is inert data; malformed or
+  unknown-operator conditions are rejected up front.
+- First-match-by-priority evaluation → `PolicyDecision` (action + required_roles +
+  reason); defaults to ALLOW when nothing matches.
+- Policy model + repository + table; `parameters` holds action metadata
+  (e.g. approval roles). Five seed policies: Small/Medium/Large Refund, PII Export
+  (DENY), Rogue Financial Agent (QUARANTINE).
+- API: `GET/POST /api/v1/policies`, `PUT /api/v1/policies/{id}`,
+  `POST /api/v1/policies/evaluate`. Create/update validate the condition (400 on bad op).
+- Frontend: Policies page — human-readable rule, required roles, action/priority/scope
+  badges, enabled state, and the underlying condition JSON.
+- Tests: 37 backend total (+14): operators, all/any, invalid-operator rejection,
+  no-code-execution, priority ordering, refund $50/$300/$650, PII DENY, rogue QUARANTINE,
+  CRUD + API validation. ruff + mypy clean; frontend green.
+
+> **Local-dev note:** the SQLite `swarmops.db` only seeds when empty. After pulling a
+> new phase, call `POST /api/v1/demo/reset` (or delete `swarmops.db`) to pick up new
+> seed data such as the policies added here.

@@ -17,6 +17,7 @@ from app.domain.models import (
     AgentDependency,
     AgentVersion,
     Organization,
+    Policy,
     RiskAssessment,
     Tool,
     User,
@@ -105,6 +106,20 @@ class DependencyRepository(ABC):
 
     @abstractmethod
     def list_for_agent(self, agent_id: str) -> list[AgentDependency]: ...
+
+
+class PolicyRepository(ABC):
+    @abstractmethod
+    def add(self, policy: Policy) -> None: ...
+
+    @abstractmethod
+    def get(self, policy_id: str) -> Policy | None: ...
+
+    @abstractmethod
+    def update(self, policy: Policy) -> None: ...
+
+    @abstractmethod
+    def list(self) -> Sequence[Policy]: ...
 
 
 class RiskAssessmentRepository(ABC):

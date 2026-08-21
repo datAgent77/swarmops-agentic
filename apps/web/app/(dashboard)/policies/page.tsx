@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PoliciesList } from "@/components/policies/policies-list";
 
 export default function PoliciesPage() {
-  return (
-    <PagePlaceholder
-      title="Policies"
-      description="Deterministic governance rules: conditions, actions, priority, and scope."
-      phase="P03"
-    />
-  );
+  return <PoliciesList />;
 }

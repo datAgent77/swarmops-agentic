@@ -15,6 +15,7 @@ from app.domain.enums import (
     AgentStatus,
     AutonomyLevel,
     DependencyTargetType,
+    PolicyAction,
     RecommendedAction,
     Relationship,
     RiskLevel,
@@ -118,3 +119,19 @@ class RiskAssessment(BaseModel):
     drivers: list[str]
     recommended_action: RecommendedAction
     created_at: datetime
+
+
+class Policy(BaseModel):
+    id: str
+    name: str
+    description: str
+    scope: str
+    priority: int
+    condition: dict[str, Any]
+    action: PolicyAction
+    # Action metadata (e.g. {"roles": ["BUSINESS_APPROVER"]} for REQUIRE_APPROVAL).
+    parameters: dict[str, Any] = {}
+    enabled: bool = True
+    created_by: str
+    created_at: datetime
+    updated_at: datetime

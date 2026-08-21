@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.domain.enums import PolicyAction
 from app.domain.models import Agent, AgentDependency, AgentVersion, User
 
 
@@ -51,3 +53,39 @@ class AgentDetailResponse(BaseModel):
 
 class UserListResponse(BaseModel):
     items: list[User]
+
+
+class PolicyCreate(BaseModel):
+    name: str
+    description: str = ""
+    scope: str = "global"
+    priority: int = 100
+    condition: dict[str, Any]
+    action: PolicyAction
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+    created_by: str = "user-alex-admin"
+
+
+class PolicyUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    scope: str | None = None
+    priority: int | None = None
+    condition: dict[str, Any] | None = None
+    action: PolicyAction | None = None
+    parameters: dict[str, Any] | None = None
+    enabled: bool | None = None
+
+
+class EvaluateRequest(BaseModel):
+    context: dict[str, Any]
+
+
+class PolicyDecisionOut(BaseModel):
+    matched: bool
+    action: PolicyAction
+    policy_id: str | None
+    policy_name: str | None
+    required_roles: list[str]
+    reason: str

@@ -69,3 +69,12 @@ class RecommendedAction(str, Enum):
     REQUIRE_APPROVAL = "REQUIRE_APPROVAL"
     SUSPEND = "SUSPEND"
     QUARANTINE = "QUARANTINE"
+
+
+class PolicyAction(str, Enum):
+    ALLOW = "ALLOW"
+    DENY = "DENY"
+    REQUIRE_APPROVAL = "REQUIRE_APPROVAL"
+    QUARANTINE = "QUARANTINE"
+    REDACT = "REDACT"
+    LOG_ONLY = "LOG_ONLY"

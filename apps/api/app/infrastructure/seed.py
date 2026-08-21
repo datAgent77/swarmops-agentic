@@ -19,12 +19,21 @@ from app.domain.enums import (
     AgentStatus,
     AutonomyLevel,
     DependencyTargetType,
+    PolicyAction,
     Relationship,
     RiskLevel,
     Role,
     ToolType,
 )
-from app.domain.models import Agent, AgentDependency, AgentVersion, Organization, Tool, User
+from app.domain.models import (
+    Agent,
+    AgentDependency,
+    AgentVersion,
+    Organization,
+    Policy,
+    Tool,
+    User,
+)
 from app.domain.severity import HIGH_RISK_FLOOR
 
 if TYPE_CHECKING:
@@ -236,6 +245,64 @@ def _refund_dependencies() -> list[AgentDependency]:
     ]
 
 
+def _policies() -> list[Policy]:
+    def policy(pid, name, desc, scope, priority, condition, action, parameters=None):
+        return Policy(
+            id=pid, name=name, description=desc, scope=scope, priority=priority,
+            condition=condition, action=action, parameters=parameters or {}, enabled=True,
+            created_by="user-alex-admin", created_at=BASE, updated_at=BASE,
+        )
+    return [
+        policy(
+            "policy-rogue-financial-agent", "Rogue Financial Agent",
+            "Quarantine high-risk financial agents that lack a human approval gate.",
+            "agent", 10,
+            {"all": [
+                {"field": "risk_score", "op": "gte", "value": 80},
+                {"field": "financial_capability", "op": "eq", "value": True},
+                {"field": "approval_gate", "op": "eq", "value": False},
+            ]},
+            PolicyAction.QUARANTINE,
+        ),
+        policy(
+            "policy-pii-export", "PII Export",
+            "Deny any external data export that contains PII.",
+            "data_export", 20,
+            {"all": [
+                {"field": "external_data_export", "op": "eq", "value": True},
+                {"field": "contains_pii", "op": "eq", "value": True},
+            ]},
+            PolicyAction.DENY,
+        ),
+        policy(
+            "policy-large-refund", "Large Refund",
+            "Refunds over $500 require both a business and a finance approver.",
+            "refund", 30,
+            {"field": "refund", "op": "gt", "value": 500},
+            PolicyAction.REQUIRE_APPROVAL,
+            {"roles": ["BUSINESS_APPROVER", "FINANCE_APPROVER"]},
+        ),
+        policy(
+            "policy-medium-refund", "Medium Refund",
+            "Refunds from $100 to $500 require a business approver.",
+            "refund", 40,
+            {"all": [
+                {"field": "refund", "op": "gte", "value": 100},
+                {"field": "refund", "op": "lte", "value": 500},
+            ]},
+            PolicyAction.REQUIRE_APPROVAL,
+            {"roles": ["BUSINESS_APPROVER"]},
+        ),
+        policy(
+            "policy-small-refund", "Small Refund",
+            "Refunds under $100 are auto-approved.",
+            "refund", 50,
+            {"field": "refund", "op": "lt", "value": 100},
+            PolicyAction.ALLOW,
+        ),
+    ]
+
+
 def apply_seed(container: RepositoryContainer) -> None:
     org = Organization(id=ORG_ID, name="AcmeCorp", slug="acmecorp", created_at=BASE)
     container.organizations.add(org)
@@ -255,6 +322,9 @@ def apply_seed(container: RepositoryContainer) -> None:
 
     for dep in _refund_dependencies():
         container.dependencies.add(dep)
+
+    for pol in _policies():
+        container.policies.add(pol)
 
     _assert_metrics(agents)
 

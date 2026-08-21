@@ -11,6 +11,7 @@ from app.infrastructure.repositories_sqlite import (
     SqliteAgentVersionRepository,
     SqliteDependencyRepository,
     SqliteOrganizationRepository,
+    SqlitePolicyRepository,
     SqliteRiskAssessmentRepository,
     SqliteToolRepository,
     SqliteUserRepository,
@@ -26,6 +27,7 @@ class RepositoryContainer:
         self.agent_versions = SqliteAgentVersionRepository(self.db)
         self.tools = SqliteToolRepository(self.db)
         self.dependencies = SqliteDependencyRepository(self.db)
+        self.policies = SqlitePolicyRepository(self.db)
         self.risk_assessments = SqliteRiskAssessmentRepository(self.db)
 
     def seed_if_empty(self) -> None:
