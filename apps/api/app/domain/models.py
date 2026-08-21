@@ -23,6 +23,7 @@ from app.domain.enums import (
     Relationship,
     RiskLevel,
     Role,
+    SecurityCategory,
     ToolType,
 )
 from app.domain.severity import severity_from_score
@@ -183,6 +184,23 @@ class AuditEvent(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     trace_id: str | None = None
     timestamp: datetime
+
+
+class SecurityIncident(BaseModel):
+    id: str
+    organization_id: str
+    source: str
+    agent_id: str | None = None
+    category: SecurityCategory
+    severity: RiskLevel
+    action: str                       # "BLOCKED" | "FLAGGED"
+    input_excerpt: str
+    detected_categories: list[str]
+    scanner: str
+    scanner_status: str               # "LIVE" | "LOCAL_DEMO"
+    policy_id: str | None = None      # policy violated, when applicable
+    resolved: bool = False
+    created_at: datetime
 
 
 class Policy(BaseModel):

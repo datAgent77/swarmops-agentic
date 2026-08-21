@@ -141,6 +141,23 @@ CREATE TABLE IF NOT EXISTS policies (
     updated_at   TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS security_incidents (
+    id                  TEXT PRIMARY KEY,
+    organization_id     TEXT NOT NULL,
+    source              TEXT NOT NULL,
+    agent_id            TEXT,
+    category            TEXT NOT NULL,
+    severity            TEXT NOT NULL,
+    action              TEXT NOT NULL,
+    input_excerpt       TEXT NOT NULL,
+    detected_categories TEXT NOT NULL,
+    scanner             TEXT NOT NULL,
+    scanner_status      TEXT NOT NULL,
+    policy_id           TEXT,
+    resolved            INTEGER NOT NULL,
+    created_at          TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
     id               TEXT PRIMARY KEY,
     organization_id  TEXT NOT NULL,
@@ -191,6 +208,7 @@ _ALL_TABLES = (
     "tool_calls",
     "approvals",
     "executions",
+    "security_incidents",
     "audit_events",
     "risk_assessments",
     "policies",

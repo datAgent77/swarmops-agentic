@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # audit trail retains local, trace-correlated telemetry.
     otel_enabled: bool = Field(default=False, alias="OTEL_ENABLED")
 
+    # --- Security ---------------------------------------------------------
+    # When enabled with a GCP project AND the google-cloud-modelarmor package,
+    # scanning uses Google Model Armor; otherwise the local demo scanner is used.
+    model_armor_enabled: bool = Field(default=False, alias="MODEL_ARMOR_ENABLED")
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_csv(cls, value: object) -> object:

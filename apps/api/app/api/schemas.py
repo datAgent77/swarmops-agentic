@@ -16,6 +16,7 @@ from app.domain.models import (
     AuditEvent,
     Execution,
     RiskAssessment,
+    SecurityIncident,
     ToolCall,
     User,
 )
@@ -243,3 +244,35 @@ class TraceResponse(BaseModel):
     status: str | None
     duration_ms: int | None
     steps: list[TraceStepOut]
+
+
+class SecurityScanRequest(BaseModel):
+    text: str
+    source: str = "manual"
+    agent_id: str | None = None
+
+
+class SecurityScanResponse(BaseModel):
+    verdict: str
+    severity: str
+    categories: list[str]
+    findings: list[dict[str, Any]]
+    scanner: str
+    scanner_status: str
+    incident_id: str | None
+    policy_id: str | None
+
+
+class SecurityIncidentListResponse(BaseModel):
+    total: int
+    items: list[SecurityIncident]
+
+
+class SecurityOverviewOut(BaseModel):
+    scanner_status: str
+    open_critical_findings: int
+    prompt_injection_attempts: int
+    pii_leakage_attempts: int
+    blocked_tool_calls: int
+    quarantined_agents: int
+    total_incidents: int

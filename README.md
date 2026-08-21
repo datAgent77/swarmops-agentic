@@ -117,7 +117,7 @@ No secrets are committed; `.env` is gitignored.
 ## Status
 
 Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
-**Complete through P09** — 76 backend tests green; ruff + mypy clean; web build green.
+**Complete through P10** — 81 backend tests green; ruff + mypy clean; web build green.
 
 | Phase | Capability | Done |
 |-------|------------|:----:|
@@ -131,7 +131,8 @@ Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
 | P07 | GovernanceAgent (Gemini via GenAI SDK) explains, never overrides | ✅ |
 | P08 | Dependency graph (React Flow) + deterministic blast radius | ✅ |
 | P09 | Append-only audit trail + observability + trace reconstruction | ✅ |
-| P10–P14 | Security/Model Armor, self-evolving, cloud, demo hardening | ⬜ |
+| P10 | Security scanner + Model Armor adapter (prompt injection / PII) | ✅ |
+| P11–P14 | Self-evolving governance, cloud deploy, demo hardening | ⬜ |
 
 **What works today — the full governed arc runs end to end:** discover the rogue
 CustomerRefundAgent → it auto-assesses to 87/100 CRITICAL → policy quarantines it →

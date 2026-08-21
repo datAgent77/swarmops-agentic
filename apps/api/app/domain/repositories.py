@@ -22,6 +22,7 @@ from app.domain.models import (
     Organization,
     Policy,
     RiskAssessment,
+    SecurityIncident,
     Tool,
     ToolCall,
     User,
@@ -183,6 +184,14 @@ class AuditRepository(ABC):
 
     @abstractmethod
     def list_for_trace(self, trace_id: str) -> Sequence[AuditEvent]: ...
+
+
+class SecurityIncidentRepository(ABC):
+    @abstractmethod
+    def add(self, incident: SecurityIncident) -> None: ...
+
+    @abstractmethod
+    def list(self, limit: int | None = None) -> Sequence[SecurityIncident]: ...
 
 
 class RiskAssessmentRepository(ABC):

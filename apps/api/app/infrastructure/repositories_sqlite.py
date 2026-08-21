@@ -18,6 +18,7 @@ from app.domain.models import (
     Organization,
     Policy,
     RiskAssessment,
+    SecurityIncident,
     Tool,
     ToolCall,
     User,
@@ -33,6 +34,7 @@ from app.domain.repositories import (
     OrganizationRepository,
     PolicyRepository,
     RiskAssessmentRepository,
+    SecurityIncidentRepository,
     ToolCallRepository,
     ToolRepository,
     UserRepository,
@@ -432,6 +434,38 @@ class SqliteApprovalRepository(_Base, ApprovalRepository):
         return [self._to_model(r) for r in rows]
 
 
+class SqliteSecurityIncidentRepository(_Base, SecurityIncidentRepository):
+    _COLUMNS = (
+        "id, organization_id, source, agent_id, category, severity, action, input_excerpt, "
+        "detected_categories, scanner, scanner_status, policy_id, resolved, created_at"
+    )
+
+    def _to_model(self, row: sqlite3.Row) -> SecurityIncident:
+        data = dict(row)
+        data["detected_categories"] = json.loads(data["detected_categories"])
+        data["resolved"] = bool(data["resolved"])
+        return SecurityIncident.model_validate(data)
+
+    def add(self, i: SecurityIncident) -> None:
+        self._write(
+            f"INSERT OR REPLACE INTO security_incidents ({self._COLUMNS}) VALUES ({','.join('?' * 14)})",
+            (
+                i.id, i.organization_id, i.source, i.agent_id, i.category.value, i.severity.value,
+                i.action, i.input_excerpt, _dumps(i.detected_categories), i.scanner,
+                i.scanner_status, i.policy_id, int(i.resolved), i.created_at.isoformat(),
+            ),
+        )
+
+    def list(self, limit: int | None = None) -> Sequence[SecurityIncident]:
+        sql = "SELECT * FROM security_incidents ORDER BY rowid DESC"
+        params: tuple[Any, ...] = ()
+        if limit is not None:
+            sql += " LIMIT ?"
+            params = (limit,)
+        rows = self._c.execute(sql, params).fetchall()
+        return [self._to_model(r) for r in rows]
+
+
 class SqliteAuditRepository(_Base, AuditRepository):
     _COLUMNS = (
         "id, organization_id, actor_type, actor_id, action, resource_type, resource_id, "
@@ -490,4 +524,5 @@ __all__ = [
     "SqliteToolCallRepository",
     "SqliteApprovalRepository",
     "SqliteAuditRepository",
+    "SqliteSecurityIncidentRepository",
 ]

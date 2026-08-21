@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { SecurityView } from "@/components/security/security-view";
 
 export default function SecurityPage() {
-  return (
-    <PagePlaceholder
-      title="Security"
-      description="Prompt-injection and PII scanning, incidents, and the Model Armor adapter."
-      phase="P10"
-    />
-  );
+  return <SecurityView />;
 }

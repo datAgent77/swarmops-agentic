@@ -101,3 +101,10 @@ class AuditActorType(str, Enum):
     SYSTEM = "SYSTEM"
     USER = "USER"
     AGENT = "AGENT"
+
+
+class SecurityCategory(str, Enum):
+    PROMPT_INJECTION = "PROMPT_INJECTION"
+    PII_LEAKAGE = "PII_LEAKAGE"
+    EXTERNAL_TRANSMISSION = "EXTERNAL_TRANSMISSION"
+    TOOL_POISONING = "TOOL_POISONING"

@@ -221,6 +221,43 @@ export type TraceResponse = {
   steps: TraceStep[];
 };
 
+export type SecurityScanResult = {
+  verdict: "BLOCK" | "ALLOW";
+  severity: string;
+  categories: string[];
+  findings: { category: string; severity: string; label: string; excerpt: string }[];
+  scanner: string;
+  scanner_status: "LIVE" | "LOCAL_DEMO";
+  incident_id: string | null;
+  policy_id: string | null;
+};
+
+export type SecurityIncident = {
+  id: string;
+  source: string;
+  agent_id: string | null;
+  category: string;
+  severity: string;
+  action: string;
+  input_excerpt: string;
+  detected_categories: string[];
+  scanner: string;
+  scanner_status: string;
+  policy_id: string | null;
+  resolved: boolean;
+  created_at: string;
+};
+
+export type SecurityOverview = {
+  scanner_status: "LIVE" | "LOCAL_DEMO";
+  open_critical_findings: number;
+  prompt_injection_attempts: number;
+  pii_leakage_attempts: number;
+  blocked_tool_calls: number;
+  quarantined_agents: number;
+  total_incidents: number;
+};
+
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
 
 export type ApprovalRequest = {
@@ -356,6 +393,24 @@ export function fetchObservabilityOverview() {
 
 export function fetchTrace(traceId: string) {
   return getJSON<TraceResponse>(`/api/v1/observability/traces/${traceId}`);
+}
+
+export async function scanSecurity(text: string): Promise<SecurityScanResult> {
+  const res = await fetch(`${API_URL}/api/v1/security/scan`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(`scan → HTTP ${res.status}`);
+  return res.json() as Promise<SecurityScanResult>;
+}
+
+export function fetchSecurityIncidents() {
+  return getJSON<{ total: number; items: SecurityIncident[] }>("/api/v1/security/incidents");
+}
+
+export function fetchSecurityOverview() {
+  return getJSON<SecurityOverview>("/api/v1/security/overview");
 }
 
 export type Persona = { id: string; name: string; email: string; role: string };
