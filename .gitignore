@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts.timestamp
+
+# Env & secrets
+.env
+.env.local
+*.local
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local dev databases (P01+)
+*.sqlite
+*.sqlite3
+*.db
+
+# Google Cloud credentials (never commit)
+*-service-account*.json
+gcp-key*.json
