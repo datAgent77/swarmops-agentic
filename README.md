@@ -196,6 +196,17 @@ authority enforced by the backend; quarantine kill switch; secrets in Secret Man
 - Console authentication + per-tenant isolation; retention/archival for the audit trail.
 - Live evaluators that derive performance/compliance from execution history.
 
+## Submission disclosure
+
+- **Newly built during the submission period** (August 2026) for the Google All Things
+  Agentic Hackathon; every commit in this repository falls within that window.
+- **No pre-existing code was incorporated.** SwarmOps is an original work; it shares only
+  a name/concept with an unrelated earlier private project — no code was carried over.
+- Built with standard frameworks/libraries (FastAPI, Next.js, React Flow, google-adk,
+  google-genai, …) and **AI coding assistants**, as permitted by the Official Rules. All
+  such dependencies are used under their open-source licenses.
+- Licensed under the MIT License (see [`LICENSE`](LICENSE)).
+
 ---
 
 Built for **Google All Things Agentic Hackathon 2026**.
