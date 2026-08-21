@@ -176,6 +176,7 @@ _PLATFORM_PROVIDERS: list[IntegrationProvider] = [
 
 def _base_integrations(settings: Settings) -> list[IntegrationInfo]:
     genai = _module_available("google.genai")
+    adk = _module_available("google.adk")
     gemini_live = genai and _has_gemini_creds(settings)
     vertex_live = genai and settings.google_genai_use_vertexai and bool(settings.google_cloud_project)
     on_cloud_run = bool(os.environ.get("K_SERVICE"))
@@ -198,9 +199,13 @@ def _base_integrations(settings: Settings) -> list[IntegrationInfo]:
              "Gemini routed through Vertex AI." if vertex_live else "Vertex AI routing is off.",
              "Set GOOGLE_GENAI_USE_VERTEXAI=true and GOOGLE_CLOUD_PROJECT."),
         info("google_adk", "Google ADK", "Framework",
-             IntegrationStatus.NOT_CONFIGURED,
-             "The Google GenAI SDK is the active Google Agent Framework; the ADK adapter is not wired.",
-             "Install google-adk and bind the GovernanceAgent to an ADK LlmAgent to switch frameworks."),
+             IntegrationStatus.CONNECTED if (adk and gemini_live)
+             else IntegrationStatus.DEMO_MODE if adk else IntegrationStatus.NOT_CONFIGURED,
+             "GovernanceAgent runs live on Google ADK with Gemini." if (adk and gemini_live)
+             else "GovernanceAgent is built as a Google ADK LlmAgent (constrained tools); "
+                  "add credentials to invoke Gemini live." if adk
+             else "Install the [ai] extra (google-adk) to build the ADK GovernanceAgent.",
+             "Install google-adk (in the [ai] extra) and set Gemini/Vertex credentials to run live."),
         info("cloud_run", "Cloud Run", "Infrastructure",
              IntegrationStatus.CONNECTED if on_cloud_run else IntegrationStatus.NOT_CONFIGURED,
              "Running on Cloud Run." if on_cloud_run else "Not running on Cloud Run (local dev).",

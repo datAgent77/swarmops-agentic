@@ -22,6 +22,7 @@ dev = [
 # GovernanceAgent degrades to a clearly-labeled local template.
 ai = [
     "google-genai>=1.0",
+    "google-adk>=1.0",
 ]
 # OpenTelemetry export to Cloud Trace (P09). Optional: without it the audit trail
 # retains local, trace-correlated telemetry.

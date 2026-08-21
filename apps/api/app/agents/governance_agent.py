@@ -66,6 +66,19 @@ class GovernanceAgent:
     def tool_names(self) -> frozenset[str]:
         return self.tools.tool_names()
 
+    @property
+    def framework(self) -> str:
+        """The active Google Agent Framework: ADK when installed, else the GenAI SDK."""
+        from app.agents.adk_governance import adk_available
+
+        return "Google ADK" if adk_available() else "Google GenAI SDK"
+
+    def adk_agent(self) -> object:
+        """Build the real ADK LlmAgent for this GovernanceAgent (requires google-adk)."""
+        from app.agents.adk_governance import build_adk_agent
+
+        return build_adk_agent(self._c, self._settings)
+
     def analyze(self, agent_id: str, action_context: dict[str, Any] | None = None) -> GovernanceAnalysis:
         agent = self._c.agents.get(agent_id)
         if agent is None:

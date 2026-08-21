@@ -408,3 +408,22 @@ approve → resume exactly once`) stays coherent.
 - [x] Governance, security, human approval, observability, auditability — all shown
 - [x] Architecture diagrams complete; reproducible repo; Cloud deployment proof available
 - [x] Demo scenario completes in < 4 minutes (guided demo + script)
+
+## Post-P14 — submission hardening
+
+Consistency + credibility pass (no new features):
+
+- **Google ADK is now real.** The GovernanceAgent is built as a genuine
+  `google.adk.agents.LlmAgent` (`app/agents/adk_governance.py`) exposing the eight
+  constrained governance tools; the deterministic engines stay authoritative and the
+  ADK `set_agent_status` tool re-enforces the rule. `google-adk` is in the `[ai]` extra;
+  `GovernanceAgent.framework` reports "Google ADK" when installed, else the GenAI SDK.
+  Integration status shows ADK truthfully (DEMO_MODE built / CONNECTED live / NOT_CONFIGURED).
+- **Docs made consistent:** README, `docs/architecture/system.md` (final diagram, no
+  "P00 foundation / Future P07+"), `agents/README.md`, and `docs/integrations.md` all
+  agree that the framework is Google ADK (with a GenAI SDK fallback).
+- **Honest GEAP claim:** GitHub description + README now read "Built with Gemini + Google
+  ADK + Google Cloud, designed for the Gemini Enterprise Agent Platform" (not "Built on").
+- **Cloud Run ingress note:** the deployment doc + README state that public ingress is for
+  demo accessibility; production requires authenticated ingress + RBAC.
+- Tests: **103 backend total** (+3 ADK, skipped without the `[ai]` extra). ruff + mypy + web green.

@@ -19,7 +19,7 @@ reports the truth: a demo provider is never shown as connected.
 |-------------|-----------------|---------------------|
 | **Gemini** | NOT_CONFIGURED (local-template fallback) | `GEMINI_API_KEY`, or `GOOGLE_GENAI_USE_VERTEXAI=true` + project |
 | **Vertex AI** | NOT_CONFIGURED | `GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT` |
-| **Google ADK** | NOT_CONFIGURED | The **GenAI SDK** is the active Google Agent Framework; install `google-adk` and bind an ADK `LlmAgent` to switch |
+| **Google ADK** | DEMO_MODE (agent built; live needs creds) / NOT_CONFIGURED without the `[ai]` extra | The GovernanceAgent is a real ADK `LlmAgent` with the constrained tools; add Gemini/Vertex credentials to invoke it live |
 | **Agent Registry** | DEMO_MODE | Bind `AgentRegistryProvider` to Google's Registry for infra discovery; governance metadata stays in SwarmOps |
 | **Agent Runtime** | DEMO_MODE / CONNECTED on Cloud Run | Deploy to Cloud Run, or bind a Google Agent Runtime provider |
 | **Memory Bank** | DEMO_MODE | Bind `MemoryProvider` to Google's Memory Bank (no PII/secrets in long-term memory) |

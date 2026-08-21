@@ -9,12 +9,16 @@ audit trail, and observability.
 
 - **Hackathon track:** Fortified Enterprise Fleet
 - **Built for Google All Things Agentic Hackathon 2026.**
-- **Status:** P00–P14 complete · **100 backend tests green** · ruff + mypy clean · web build green
+- **Status:** P00–P14 complete · **103 backend tests green** · ruff + mypy clean · web build green
+
+Built with **Gemini** and **Google Cloud**, and designed for the **Gemini Enterprise
+Agent Platform** (adapter seams with truthful status on the Integrations page).
 
 > **The core invariant: governance is deterministic. No LLM sits in the authorization
-> path.** Gemini (via the Google GenAI SDK / Vertex AI) explains risk and recommends
-> remediation — it can never override a DENY or QUARANTINE. This is enforced in code and
-> proven by tests that feed a hostile explainer and assert the decision stands.
+> path.** The GovernanceAgent (Google **ADK**, with Gemini via the GenAI SDK / Vertex AI)
+> explains risk and recommends remediation — it can never override a DENY or QUARANTINE.
+> This is enforced in code and proven by tests that feed a hostile explainer and assert
+> the decision stands.
 
 ## The problem
 
@@ -54,7 +58,7 @@ rejects a candidate agent version whose compliance regresses.
 | Backend | `apps/api` | FastAPI, layered `api / application / domain / infrastructure` | Cloud Run |
 | Persistence | — | SQLite (local) / **Firestore** (cloud) behind one interface | Cloud SQL-free |
 | Eventing | — | In-memory (local) / **Pub/Sub** (cloud) | — |
-| AI | `apps/api/app/agents` | **GovernanceAgent** via Google **GenAI SDK** / **Vertex AI** | — |
+| AI | `apps/api/app/agents` | **GovernanceAgent** on Google **ADK** (Gemini via GenAI SDK / **Vertex AI**) | — |
 
 See [`docs/architecture/system.md`](docs/architecture/system.md) (component + governance
 diagrams), [`docs/architecture/execution-sequence.md`](docs/architecture/execution-sequence.md)
@@ -67,7 +71,7 @@ flowchart LR
     API --> POL["Deterministic policy engine"]
     POL -->|REQUIRE_APPROVAL| HUM["Human approvals"]
     API --> EXEC["Execution state machine + safe tools"]
-    GEM["Gemini (GenAI SDK / Vertex AI)"] -. explains, never overrides .-> POL
+    GA["GovernanceAgent (Google ADK) → Gemini"] -. explains, never overrides .-> POL
     API --> AUD["Append-only audit + traces"]
     API --> FS[("Firestore")]
     API --> PS(("Pub/Sub"))
@@ -75,8 +79,9 @@ flowchart LR
 
 ## Google technologies used
 
-- **Gemini** (via the Google **GenAI SDK**, an accepted Google Agent Framework) — the
-  GovernanceAgent's explanation layer; **Vertex AI** routing when configured.
+- **Google ADK** — the GovernanceAgent is a real ADK `LlmAgent` exposing the constrained
+  governance tools (with a Google **GenAI SDK** fallback; either is a Google Agent Framework).
+- **Gemini** — the GovernanceAgent's explanation layer; **Vertex AI** routing when configured.
 - **Cloud Run** — API + web, scale-to-zero.
 - **Firestore** — cloud persistence behind the repository interfaces (`PERSISTENCE_BACKEND=firestore`).
 - **Pub/Sub** — domain event bus (`EVENT_BUS=pubsub`).
@@ -154,10 +159,13 @@ cd infrastructure/terraform && terraform init && terraform apply -var project_id
 
 No secrets are committed; `.env` is gitignored and cloud secrets live in Secret Manager.
 
+> The demo Cloud Run deployment uses public ingress for judge accessibility. Production
+> deployments require authenticated ingress and role-based access (see the deployment doc).
+
 ## Testing
 
 ```bash
-make test    # 100 backend tests (pytest)
+make test    # 103 backend tests (pytest)
 make lint    # ruff + mypy (backend), eslint + tsc (frontend)
 ```
 

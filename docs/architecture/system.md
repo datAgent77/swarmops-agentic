@@ -9,40 +9,50 @@ LLM, the agent framework, or the runtime — it is the management layer that mak
 AI workforce safe to run: identity, risk, policy, approvals, audit, and observability.
 
 The system is a monorepo with a Next.js operational console and a layered FastAPI
-backend. Authorization is **deterministic**; Gemini (via Google ADK / Vertex AI,
-from P07) provides explanation and analysis only — never enforcement.
+backend. Authorization is **deterministic**; the GovernanceAgent (Google **ADK** with
+Gemini via the GenAI SDK / Vertex AI) provides explanation and analysis only — never
+enforcement.
 
-## Component diagram (P00 foundation)
+## Component diagram (final, P00–P14)
 
 ```mermaid
 flowchart TB
-    subgraph Client["apps/web — Next.js Console"]
-        UI["Operational Shell\n(Overview, Agents, Graph, Executions,\nApprovals, Policies, Security,\nObservability, Audit, Integrations)"]
+    UI["SwarmOps Web Console (Next.js on Cloud Run)"]
+    UI -->|"HTTP /api/v1/*"| API["FastAPI Control Plane (layered: api / application / domain / infrastructure)"]
+
+    subgraph Governance["Deterministic governance (no LLM in the authorization path)"]
+        RISK["Risk Engine"]
+        POL["Policy Engine"]
+        EXEC["Execution State Machine + Safe Tools"]
+        HUM["Human Approval Engine"]
+        SEC["Security Scanner / Model Armor"]
     end
 
-    subgraph API["apps/api — FastAPI"]
-        direction TB
-        A["api\n(thin route handlers)"]
-        APP["application\n(use-cases)"]
-        DOM["domain\n(models + deterministic rules)"]
-        INFRA["infrastructure\n(persistence, external adapters)"]
-        A --> APP --> DOM
-        APP --> INFRA
-        INFRA -.implements interfaces from.-> DOM
+    subgraph AI["AI layer (explains, never decides)"]
+        GA["GovernanceAgent — Google ADK LlmAgent"]
+        GEM["Gemini (GenAI SDK / Vertex AI)"]
+        GA --> GEM
     end
 
-    UI -->|"HTTP /api/v1/*"| A
-    A --> H["/health/"]
-    A --> S["/api/v1/status/"]
+    API --> RISK --> POL
+    POL -->|"REQUIRE_APPROVAL"| HUM
+    POL -->|"DENY / QUARANTINE"| EXEC
+    API --> EXEC
+    API --> SEC
+    GA -. annotates .-> POL
 
-    subgraph Future["Later phases (P07+)"]
-        ADK["agents/ — Google ADK\nGovernanceAgent"]
-        GEM["Gemini via Vertex AI"]
-        GCP["Cloud Run · Firestore · Pub/Sub\nModel Armor · Cloud Trace"]
+    subgraph Cloud["Google Cloud"]
+        FS[("Firestore")]
+        PS(("Pub/Sub"))
+        CT["Cloud Trace"]
+        SM["Secret Manager"]
     end
 
-    APP -.P07.-> ADK -.P07.-> GEM
-    INFRA -.P12.-> GCP
+    API --> AUD["Append-only Audit + Traces"]
+    API --> FS
+    API --> PS
+    AUD --> CT
+    API -.secrets.-> SM
 ```
 
 ## Layering rules
@@ -52,8 +62,9 @@ flowchart TB
 - **application** — orchestrates use-cases (risk assessment, policy evaluation,
   approvals, discovery lifecycle). Depends on domain + infrastructure interfaces.
 - **domain** — pure models and deterministic rules. No framework or I/O imports.
-- **infrastructure** — concrete adapters (SQLite/Firestore repositories, event bus,
-  Gemini/ADK, Model Armor). Implements interfaces declared by the domain/application.
+- **infrastructure** — concrete adapters (SQLite/Firestore repositories, in-memory/
+  Pub/Sub event bus, Gemini/ADK, Model Armor, telemetry). Implements interfaces declared
+  by the domain/application.
 
 The dependency arrow always points **inward** toward the domain.
 

@@ -8,6 +8,12 @@ deployment costs almost nothing when idle.
 > Local development never needs any of this — the default backend is SQLite with an
 > in-memory event bus. These steps are for a cloud deployment (proof for judging).
 
+> **⚠️ Ingress note.** The hackathon demo deployment uses **public Cloud Run ingress**
+> (`--allow-unauthenticated`) for judge accessibility. **Production deployments require
+> authenticated ingress and role-based access control** — set
+> `allow_unauthenticated = false` in Terraform (or omit `--allow-unauthenticated`) and
+> front the services with IAP / an identity-aware proxy.
+
 ## Prerequisites
 
 - `gcloud` CLI authenticated (`gcloud auth login`) and a billing-enabled project
