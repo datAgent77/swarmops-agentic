@@ -222,20 +222,43 @@ def _refund_agent_version() -> AgentVersion:
     )
 
 
+# Baseline performance/compliance per named agent's current version (0–100).
+_BASE_METRICS: dict[str, tuple[int, int]] = {
+    "agent-lead-qualification": (71, 94),
+}
+
+
 def _named_versions() -> list[AgentVersion]:
     versions = [_refund_agent_version()]
     for row in _NAMED[1:]:
         aid, name, _dept, _status, autonomy, _risk, version, owner, pidx, _fw, _rt, _desc = row
         _provider, model = PROVIDER_MODELS[pidx]
+        perf, comp = _BASE_METRICS.get(aid, (78, 90))
         versions.append(AgentVersion(
             id=f"ver-{aid}-{version}", agent_id=aid, version=version,
             system_prompt_hash=_hash(f"{aid}-{version}"),
             system_prompt_summary=f"Baseline configuration for {name}.",
-            tools=[], permissions=[], data_sources=[], model=model,
-            configuration={"autonomy": autonomy.value, "approval_gate": True},
+            tools=[], permissions=["leads:read"], data_sources=["crm"], model=model,
+            configuration={"autonomy": autonomy.value, "approval_gate": True,
+                           "performance": perf, "compliance": comp},
             created_by=owner, created_at=BASE + timedelta(days=20),
         ))
+    versions.append(_lead_candidate_v17())
     return versions
+
+
+def _lead_candidate_v17() -> AgentVersion:
+    """Candidate: better performance, worse compliance — the self-evolving demo."""
+    return AgentVersion(
+        id="ver-agent-lead-qualification-v17", agent_id="agent-lead-qualification", version="v17",
+        system_prompt_hash=_hash("agent-lead-qualification-v17"),
+        system_prompt_summary="Aggressive lead scoring that enriches from external data sources.",
+        tools=[], permissions=["leads:read", "leads:write", "external:enrich"],
+        data_sources=["crm", "third_party_data"], model="gemini-3.5-flash",
+        configuration={"autonomy": "HIGH", "approval_gate": False,
+                       "performance": 82, "compliance": 70},
+        created_by="user-blair-business", created_at=BASE + timedelta(days=40),
+    )
 
 
 def _refund_dependencies() -> list[AgentDependency]:

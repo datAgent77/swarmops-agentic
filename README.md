@@ -117,7 +117,7 @@ No secrets are committed; `.env` is gitignored.
 ## Status
 
 Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
-**Complete through P10** — 81 backend tests green; ruff + mypy clean; web build green.
+**Complete through P11** — 91 backend tests green; ruff + mypy clean; web build green.
 
 | Phase | Capability | Done |
 |-------|------------|:----:|
@@ -132,7 +132,8 @@ Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
 | P08 | Dependency graph (React Flow) + deterministic blast radius | ✅ |
 | P09 | Append-only audit trail + observability + trace reconstruction | ✅ |
 | P10 | Security scanner + Model Armor adapter (prompt injection / PII) | ✅ |
-| P11–P14 | Self-evolving governance, cloud deploy, demo hardening | ⬜ |
+| P11 | Version intelligence + self-evolving governance (v17 rejected) | ✅ |
+| P12–P14 | Google Cloud deploy (Firestore/Pub/Sub/Cloud Run), demo hardening | ⬜ |
 
 **What works today — the full governed arc runs end to end:** discover the rogue
 CustomerRefundAgent → it auto-assesses to 87/100 CRITICAL → policy quarantines it →

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { SeverityBadge, StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { RiskPanel } from "@/components/agents/risk-panel";
+import { VersionIntelligence } from "@/components/agents/version-intelligence";
 import { AgentGraphPanel } from "@/components/graph/agent-graph-panel";
 import { activateAgent, fetchAgent, type AgentDetail as Detail } from "@/lib/api";
 
@@ -158,8 +159,11 @@ export function AgentDetail({ id }: { id: string }) {
             return <RiskPanel agentId={agent.id} />;
           }
           if (active === "Versions") {
-            return versions.length ? (
-              <div className="space-y-3">
+            return (
+              <div className="space-y-4">
+                <VersionIntelligence agentId={agent.id} />
+                {versions.length > 0 && (
+                  <div className="space-y-3">
                 {versions.map((v) => (
                   <Card key={v.id}>
                     <CardHeader className="pb-2">
@@ -174,14 +178,11 @@ export function AgentDetail({ id }: { id: string }) {
                       <Field label="Permissions" value={v.permissions.join(", ") || "—"} />
                       <Field label="Prompt hash" value={<code className="font-mono text-xs">{v.system_prompt_hash}</code>} />
                     </CardContent>
-                  </Card>
-                ))}
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Only the current version metadata is tracked for this agent. Version intelligence
-                and change proposals arrive in P11.
-              </p>
             );
           }
           return (

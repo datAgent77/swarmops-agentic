@@ -258,6 +258,31 @@ export type SecurityOverview = {
   total_incidents: number;
 };
 
+export type ChangeProposal = {
+  id: string;
+  agent_id: string;
+  base_version: string;
+  candidate_version: string;
+  change_type: string;
+  changes: string[];
+  old_summary: string;
+  new_summary: string;
+  performance_before: number;
+  performance_after: number;
+  compliance_before: number;
+  compliance_after: number;
+  decision: "PENDING" | "ACCEPTED" | "REJECTED";
+  reason: string;
+  created_at: string;
+};
+
+export type ChangeProposalResponse = {
+  proposal: ChangeProposal;
+  performance_delta_pct: number;
+  compliance_delta_pct: number;
+  explanation: { text: string; model_status: "LIVE" | "LOCAL_TEMPLATE"; model_name: string; provider: string };
+};
+
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
 
 export type ApprovalRequest = {
@@ -411,6 +436,22 @@ export function fetchSecurityIncidents() {
 
 export function fetchSecurityOverview() {
   return getJSON<SecurityOverview>("/api/v1/security/overview");
+}
+
+export async function proposeChange(agentId: string): Promise<ChangeProposalResponse> {
+  const res = await fetch(`${API_URL}/api/v1/agents/${agentId}/change-proposals`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error(`propose → HTTP ${res.status}`);
+  return res.json() as Promise<ChangeProposalResponse>;
+}
+
+export function fetchProposals(agentId: string) {
+  return getJSON<{ total: number; items: ChangeProposal[] }>(
+    `/api/v1/agents/${agentId}/change-proposals`,
+  );
 }
 
 export type Persona = { id: string; name: string; email: string; role: string };

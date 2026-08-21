@@ -19,6 +19,7 @@ from app.domain.enums import (
     DependencyTargetType,
     ExecutionStatus,
     PolicyAction,
+    ProposalDecision,
     RecommendedAction,
     Relationship,
     RiskLevel,
@@ -184,6 +185,24 @@ class AuditEvent(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     trace_id: str | None = None
     timestamp: datetime
+
+
+class AgentChangeProposal(BaseModel):
+    id: str
+    agent_id: str
+    base_version: str
+    candidate_version: str
+    change_type: str
+    changes: list[str]                # deterministic diff (aspects that changed)
+    old_summary: str
+    new_summary: str
+    performance_before: int
+    performance_after: int
+    compliance_before: int
+    compliance_after: int
+    decision: ProposalDecision
+    reason: str
+    created_at: datetime
 
 
 class SecurityIncident(BaseModel):

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from app.domain.enums import PolicyAction
 from app.domain.models import (
     Agent,
+    AgentChangeProposal,
     AgentDependency,
     AgentVersion,
     ApprovalRequest,
@@ -276,3 +277,24 @@ class SecurityOverviewOut(BaseModel):
     blocked_tool_calls: int
     quarantined_agents: int
     total_incidents: int
+
+
+class ChangeProposalCreate(BaseModel):
+    candidate_version: str | None = None
+    allowed_regression: int = 5
+
+
+class ProposalEvaluateRequest(BaseModel):
+    allowed_regression: int = 5
+
+
+class ChangeProposalResponse(BaseModel):
+    proposal: AgentChangeProposal
+    performance_delta_pct: float
+    compliance_delta_pct: float
+    explanation: ExplanationOut
+
+
+class ChangeProposalListResponse(BaseModel):
+    total: int
+    items: list[AgentChangeProposal]

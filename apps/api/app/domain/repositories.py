@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from app.domain.enums import RiskLevel
 from app.domain.models import (
     Agent,
+    AgentChangeProposal,
     AgentDependency,
     AgentVersion,
     ApprovalRequest,
@@ -184,6 +185,20 @@ class AuditRepository(ABC):
 
     @abstractmethod
     def list_for_trace(self, trace_id: str) -> Sequence[AuditEvent]: ...
+
+
+class ChangeProposalRepository(ABC):
+    @abstractmethod
+    def add(self, proposal: AgentChangeProposal) -> None: ...
+
+    @abstractmethod
+    def get(self, proposal_id: str) -> AgentChangeProposal | None: ...
+
+    @abstractmethod
+    def update(self, proposal: AgentChangeProposal) -> None: ...
+
+    @abstractmethod
+    def list_for_agent(self, agent_id: str) -> Sequence[AgentChangeProposal]: ...
 
 
 class SecurityIncidentRepository(ABC):

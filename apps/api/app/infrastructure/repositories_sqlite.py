@@ -10,6 +10,7 @@ from typing import Any
 from app.domain.enums import RiskLevel
 from app.domain.models import (
     Agent,
+    AgentChangeProposal,
     AgentDependency,
     AgentVersion,
     ApprovalRequest,
@@ -29,6 +30,7 @@ from app.domain.repositories import (
     AgentVersionRepository,
     ApprovalRepository,
     AuditRepository,
+    ChangeProposalRepository,
     DependencyRepository,
     ExecutionRepository,
     OrganizationRepository,
@@ -434,6 +436,43 @@ class SqliteApprovalRepository(_Base, ApprovalRepository):
         return [self._to_model(r) for r in rows]
 
 
+class SqliteChangeProposalRepository(_Base, ChangeProposalRepository):
+    _COLUMNS = (
+        "id, agent_id, base_version, candidate_version, change_type, changes, old_summary, "
+        "new_summary, performance_before, performance_after, compliance_before, "
+        "compliance_after, decision, reason, created_at"
+    )
+
+    def _to_model(self, row: sqlite3.Row) -> AgentChangeProposal:
+        data = dict(row)
+        data["changes"] = json.loads(data["changes"])
+        return AgentChangeProposal.model_validate(data)
+
+    def add(self, p: AgentChangeProposal) -> None:
+        self._write(
+            f"INSERT OR REPLACE INTO change_proposals ({self._COLUMNS}) VALUES ({','.join('?' * 15)})",
+            (
+                p.id, p.agent_id, p.base_version, p.candidate_version, p.change_type,
+                _dumps(p.changes), p.old_summary, p.new_summary, p.performance_before,
+                p.performance_after, p.compliance_before, p.compliance_after,
+                p.decision.value, p.reason, p.created_at.isoformat(),
+            ),
+        )
+
+    def update(self, proposal: AgentChangeProposal) -> None:
+        self.add(proposal)
+
+    def get(self, proposal_id: str) -> AgentChangeProposal | None:
+        row = self._c.execute("SELECT * FROM change_proposals WHERE id=?", (proposal_id,)).fetchone()
+        return self._to_model(row) if row else None
+
+    def list_for_agent(self, agent_id: str) -> Sequence[AgentChangeProposal]:
+        rows = self._c.execute(
+            "SELECT * FROM change_proposals WHERE agent_id=? ORDER BY rowid DESC", (agent_id,)
+        ).fetchall()
+        return [self._to_model(r) for r in rows]
+
+
 class SqliteSecurityIncidentRepository(_Base, SecurityIncidentRepository):
     _COLUMNS = (
         "id, organization_id, source, agent_id, category, severity, action, input_excerpt, "
@@ -525,4 +564,5 @@ __all__ = [
     "SqliteApprovalRepository",
     "SqliteAuditRepository",
     "SqliteSecurityIncidentRepository",
+    "SqliteChangeProposalRepository",
 ]

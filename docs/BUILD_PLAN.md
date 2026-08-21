@@ -41,7 +41,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P08 | Agent Dependency Graph & Blast Radius | ✅ complete |
 | P09 | Audit Trail & OpenTelemetry Observability | ✅ complete |
 | P10 | Security Layer, Prompt Injection & Model Armor | ✅ complete |
-| P11 | Agent Version Intelligence & Self-Evolving Governance | ⬜ pending |
+| P11 | Agent Version Intelligence & Self-Evolving Governance | ✅ complete |
 | P12 | Google Cloud Persistence, Pub/Sub & Cloud Run | ⬜ pending |
 | P13 | Gemini Enterprise Agent Platform Adapters | ⬜ pending |
 | P14 | Demo Hardening, UX Polish & Submission Readiness | ⬜ pending |
@@ -299,3 +299,26 @@ approve → resume exactly once`) stays coherent.
 - Tests: 81 backend total (+5): local scanner blocks the demo attack, scan endpoint
   blocks + creates an incident + policy DENY, audit event created, benign text allowed,
   overview shape/status. ruff + mypy + web build green.
+
+## P11 — delivered
+
+- Deterministic version diff (`domain/version_intelligence.py`): detects prompt, tools,
+  permissions, model, autonomy, and data-access changes between a base and candidate.
+- Self-evolving governance rule: a compliance regression beyond the allowed threshold
+  is **rejected even when performance improves** — compliance is protected first.
+- **LeadQualificationAgent v16 → v17** demo: **performance 71 → 82 (+15.5%),
+  compliance 94 → 70 (−25.5%) → REJECTED** — *"Performance improvement does not justify
+  compliance regression."* The exact same candidate is ACCEPTED only when the allowed
+  regression is widened, proving the deterministic rule (not an LLM) decides.
+- `AgentChangeProposal` model + repository + table; `agent.change_proposed` audit event.
+- Gemini explains the operational/security impact (via the explainer) but never approves
+  — decision stays deterministic; explanation is prose, honestly labeled LIVE/local.
+- API: `POST /api/v1/agents/{id}/change-proposals`,
+  `GET /api/v1/agents/{id}/change-proposals`,
+  `POST /api/v1/change-proposals/{id}/evaluate`.
+- Frontend: Versions tab "Self-evolving governance" panel — before→after deltas,
+  decision, reason, Gemini explanation, and the tagline
+  *"Self-evolving agents require self-evolving governance."*
+- Tests: 91 backend total (+10): diff detection, compliance/performance regression rules,
+  threshold control, v17 REJECTED with exact numbers/reason, list, evaluate flip, audit.
+  ruff + mypy + web build green.

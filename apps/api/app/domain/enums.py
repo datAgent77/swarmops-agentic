@@ -108,3 +108,9 @@ class SecurityCategory(str, Enum):
     PII_LEAKAGE = "PII_LEAKAGE"
     EXTERNAL_TRANSMISSION = "EXTERNAL_TRANSMISSION"
     TOOL_POISONING = "TOOL_POISONING"
+
+
+class ProposalDecision(str, Enum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
