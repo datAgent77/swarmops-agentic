@@ -13,6 +13,7 @@ from app.domain.models import (
     AgentDependency,
     AgentVersion,
     ApprovalRequest,
+    AuditEvent,
     Execution,
     RiskAssessment,
     ToolCall,
@@ -204,3 +205,41 @@ class BlastRadiusResponse(BaseModel):
     privileged_downstream_agents: list[str]
     reachable_nodes: int
     indicators: list[str]
+
+
+class AuditListResponse(BaseModel):
+    total: int
+    items: list[AuditEvent]
+
+
+class ObservabilityOverviewOut(BaseModel):
+    total_executions: int
+    by_status: dict[str, int]
+    completed: int
+    failed: int
+    blocked: int
+    error_rate: float
+    avg_latency_ms: float
+    policy_violations: int
+    estimated_spend: float
+    token_usage: int | None
+    avg_approval_wait_ms: float
+    audit_event_count: int
+    telemetry_backend: str
+
+
+class TraceStepOut(BaseModel):
+    name: str
+    kind: str
+    decision: str | None
+    reason: str | None
+    timestamp: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class TraceResponse(BaseModel):
+    trace_id: str
+    execution_id: str | None
+    status: str | None
+    duration_ms: int | None
+    steps: list[TraceStepOut]

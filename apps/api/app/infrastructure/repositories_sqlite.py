@@ -469,6 +469,12 @@ class SqliteAuditRepository(_Base, AuditRepository):
         ).fetchall()
         return [self._to_model(r) for r in rows]
 
+    def list_for_trace(self, trace_id: str) -> Sequence[AuditEvent]:
+        rows = self._c.execute(
+            "SELECT * FROM audit_events WHERE trace_id=? ORDER BY rowid ASC", (trace_id,)
+        ).fetchall()
+        return [self._to_model(r) for r in rows]
+
 
 __all__ = [
     "severity_from_score",

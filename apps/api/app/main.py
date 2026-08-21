@@ -20,6 +20,7 @@ from app.api.routes import (
     graph,
     health,
     lifecycle,
+    observability,
     organizations,
     policies,
     risk,
@@ -28,10 +29,12 @@ from app.api.routes import (
 )
 from app.config import get_settings
 from app.infrastructure.container import RepositoryContainer
+from app.infrastructure.telemetry import configure_tracing
 
 
 def create_app(container: RepositoryContainer | None = None) -> FastAPI:
     settings = get_settings()
+    configure_tracing(settings)  # best-effort; falls back to local telemetry
     app = FastAPI(
         title="SwarmOps API",
         version=__version__,
@@ -59,6 +62,7 @@ def create_app(container: RepositoryContainer | None = None) -> FastAPI:
     app.include_router(lifecycle.router)
     app.include_router(governance.router)
     app.include_router(graph.router)
+    app.include_router(observability.router)
     app.include_router(risk.router)
     app.include_router(policies.router)
     app.include_router(executions.router)

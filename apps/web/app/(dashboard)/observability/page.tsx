@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { ObservabilityView } from "@/components/observability/observability-view";
 
 export default function ObservabilityPage() {
-  return (
-    <PagePlaceholder
-      title="Observability"
-      description="Throughput, latency, spend, and OpenTelemetry execution traces."
-      phase="P09"
-    />
-  );
+  return <ObservabilityView />;
 }

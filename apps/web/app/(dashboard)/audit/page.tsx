@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { AuditLog } from "@/components/audit/audit-log";
 
 export default function AuditPage() {
-  return (
-    <PagePlaceholder
-      title="Audit Log"
-      description="Append-only record of every decision, approval, and tool call."
-      phase="P09"
-    />
-  );
+  return <AuditLog />;
 }

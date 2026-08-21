@@ -39,7 +39,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P06 | Quarantine, Discovery & Governance Lifecycle | ✅ complete |
 | P07 | Google ADK + Gemini Governance Agent | ✅ complete |
 | P08 | Agent Dependency Graph & Blast Radius | ✅ complete |
-| P09 | Audit Trail & OpenTelemetry Observability | ⬜ pending |
+| P09 | Audit Trail & OpenTelemetry Observability | ✅ complete |
 | P10 | Security Layer, Prompt Injection & Model Armor | ⬜ pending |
 | P11 | Agent Version Intelligence & Self-Evolving Governance | ⬜ pending |
 | P12 | Google Cloud Persistence, Pub/Sub & Cloud Run | ⬜ pending |
@@ -254,3 +254,25 @@ approve → resume exactly once`) stays coherent.
   detail Dependencies tab shows the agent graph + blast-radius chips.
 - Tests: 71 backend total (+6): refund graph dependencies, node-type classification,
   fleet network, blast-radius flags, benign agent, 404. ruff + mypy + web build green.
+
+## P09 — delivered
+
+- Comprehensive audit emission across the execution + approval flows, each event
+  carrying the execution's `trace_id`: execution.started, policy.evaluated,
+  execution.waiting_approval/blocked/resumed/failed/completed, approval.requested/
+  granted/rejected, tool_call.completed — on top of P06/P07's lifecycle/governance events.
+- Observability service: fleet overview (throughput, completed/failed/blocked, error
+  rate, avg latency, policy violations, estimated spend, avg approval wait, audit count)
+  and **trace reconstruction** — the audit trail doubles as an end-to-end reasoning
+  chain (execution → policy → approval gate → tool → completion).
+- Token usage is reported honestly as `null` (not tracked yet); telemetry backend is
+  reported truthfully (`local`, or `cloud_trace` when `OTEL_ENABLED` + a GCP project).
+- OpenTelemetry is an optional `[otel]` extra with a best-effort Cloud Trace exporter
+  (`infrastructure/telemetry.py`); startup never fails when it's absent.
+- API: `GET /api/v1/audit` (limit/action/resource filters),
+  `GET /api/v1/observability/overview`, `GET /api/v1/observability/traces/{trace_id}`.
+- Frontend: Audit Log (Timestamp/Actor/Action/Resource/Decision/Reason/Trace, trace
+  links to the trace view) and Observability (metric tiles + recent traces + execution
+  trace timeline).
+- Tests: 76 backend total (+5): execution audit events, trace correlation, full governed
+  flow audit chain, overview shape, trace reconstruction. ruff + mypy + web build green.

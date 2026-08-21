@@ -173,6 +173,54 @@ export type BlastRadius = {
   indicators: string[];
 };
 
+export type AuditEvent = {
+  id: string;
+  organization_id: string;
+  actor_type: string;
+  actor_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  decision: string | null;
+  reason: string | null;
+  metadata: Record<string, unknown>;
+  trace_id: string | null;
+  timestamp: string;
+};
+
+export type ObservabilityOverview = {
+  total_executions: number;
+  by_status: Record<string, number>;
+  completed: number;
+  failed: number;
+  blocked: number;
+  error_rate: number;
+  avg_latency_ms: number;
+  policy_violations: number;
+  estimated_spend: number;
+  token_usage: number | null;
+  avg_approval_wait_ms: number;
+  audit_event_count: number;
+  telemetry_backend: string;
+};
+
+export type TraceStep = {
+  name: string;
+  kind: string;
+  decision: string | null;
+  reason: string | null;
+  timestamp: string;
+  metadata: Record<string, unknown>;
+};
+
+export type TraceResponse = {
+  trace_id: string;
+  execution_id: string | null;
+  status: string | null;
+  duration_ms: number | null;
+  steps: TraceStep[];
+};
+
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
 
 export type ApprovalRequest = {
@@ -296,6 +344,18 @@ export function fetchAgentGraph(agentId: string) {
 
 export function fetchBlastRadius(agentId: string) {
   return getJSON<BlastRadius>(`/api/v1/agents/${agentId}/blast-radius`);
+}
+
+export function fetchAudit(limit = 200) {
+  return getJSON<{ total: number; items: AuditEvent[] }>(`/api/v1/audit?limit=${limit}`);
+}
+
+export function fetchObservabilityOverview() {
+  return getJSON<ObservabilityOverview>("/api/v1/observability/overview");
+}
+
+export function fetchTrace(traceId: string) {
+  return getJSON<TraceResponse>(`/api/v1/observability/traces/${traceId}`);
 }
 
 export type Persona = { id: string; name: string; email: string; role: string };

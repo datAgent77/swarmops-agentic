@@ -16,12 +16,32 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from app.application.audit_service import record_event
 from app.domain.enums import AgentStatus, ExecutionStatus, PolicyAction
 from app.domain.execution_state import assert_transition
 from app.domain.models import Execution, ToolCall
 from app.domain.policy_engine import PolicyDecision, evaluate_policies
 from app.infrastructure.container import RepositoryContainer
 from app.infrastructure.tool_layer import KNOWN_TOOLS, ToolNotFound, is_state_changing, run_tool
+
+
+def _audit(
+    container: RepositoryContainer,
+    execution: Execution,
+    action: str,
+    *,
+    resource_type: str = "execution",
+    resource_id: str | None = None,
+    decision: str | None = None,
+    reason: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Append an audit event correlated to the execution's trace."""
+    record_event(
+        container, action=action, resource_type=resource_type,
+        resource_id=resource_id or execution.id, decision=decision, reason=reason,
+        metadata=metadata, trace_id=execution.trace_id,
+    )
 
 
 class ExecutionAgentNotFound(Exception):
@@ -62,7 +82,7 @@ def _version_id(container: RepositoryContainer, agent_id: str, label: str) -> st
     return None
 
 
-def _run_one(container: RepositoryContainer, execution_id: str, req: ToolCallRequest) -> tuple[ToolCall, dict]:
+def _run_one(container: RepositoryContainer, execution: Execution, req: ToolCallRequest) -> tuple[ToolCall, dict]:
     started = _now()
     replay = False
     if is_state_changing(req.tool) and req.idempotency_key:
@@ -77,13 +97,16 @@ def _run_one(container: RepositoryContainer, execution_id: str, req: ToolCallReq
     completed = _now()
 
     call = ToolCall(
-        id=f"tc-{uuid.uuid4().hex[:12]}", execution_id=execution_id, tool_id=req.tool,
+        id=f"tc-{uuid.uuid4().hex[:12]}", execution_id=execution.id, tool_id=req.tool,
         arguments_summary=json.dumps(req.arguments), result_summary=result_summary,
         policy_decision="ALLOW", started_at=started, completed_at=completed,
         duration_ms=max(0, int((completed - started).total_seconds() * 1000)),
         idempotency_key=req.idempotency_key,
     )
     container.tool_calls.add(call)
+    _audit(container, execution, "tool_call.completed", resource_type="tool_call",
+           resource_id=call.id, reason=f"{req.tool}{' (replay)' if replay else ''}",
+           metadata={"tool": req.tool, "duration_ms": call.duration_ms})
     return call, result
 
 
@@ -129,19 +152,26 @@ def start_execution(
     container.executions.add(execution)
     execution.status = assert_transition(execution.status, ExecutionStatus.RUNNING)
     container.executions.update(execution)
+    _audit(container, execution, "execution.started", reason=input_summary,
+           metadata={"agent_id": agent_id})
 
     # Deterministic governance gate.
     decision = evaluate_policies(list(container.policies.list()), _governance_context(tool_calls))
+    _audit(container, execution, "policy.evaluated", decision=decision.action.value,
+           reason=decision.policy_name or "no policy matched")
 
     if decision.action in (PolicyAction.DENY, PolicyAction.QUARANTINE):
         execution.status = assert_transition(execution.status, ExecutionStatus.BLOCKED)
         execution.output_summary = f"blocked by policy: {decision.policy_name} ({decision.action.value})"
+        _audit(container, execution, "execution.blocked", decision=decision.action.value,
+               reason=execution.output_summary)
         _finalize(container, execution, started)
         return execution
 
     if decision.action is PolicyAction.REQUIRE_APPROVAL:
         _open_approvals(container, execution, tool_calls, decision)
         execution.status = assert_transition(execution.status, ExecutionStatus.WAITING_APPROVAL)
+        _audit(container, execution, "execution.waiting_approval", reason=decision.policy_name)
         execution.pending_actions = [
             {"tool": tc.tool, "arguments": tc.arguments, "idempotency_key": tc.idempotency_key}
             for tc in tool_calls
@@ -165,12 +195,15 @@ def _open_approvals(
 
     context = _governance_context(tool_calls)
     for i, role in enumerate(decision.required_roles):
-        container.approvals.add(ApprovalRequest(
+        approval = ApprovalRequest(
             id=f"appr-{uuid.uuid4().hex[:12]}", execution_id=execution.id,
             policy_id=decision.policy_id, requested_from_role=Role(role), sequence=i + 1,
             status=ApprovalStatus.PENDING, reason=decision.reason, context=context,
             created_at=_now(),
-        ))
+        )
+        container.approvals.add(approval)
+        _audit(container, execution, "approval.requested", resource_type="approval",
+               resource_id=approval.id, reason=f"requires {role}")
 
 
 def _run_and_complete(
@@ -182,17 +215,20 @@ def _run_and_complete(
     outputs: list[dict] = []
     try:
         for req in tool_calls:
-            _, result = _run_one(container, execution.id, req)
+            _, result = _run_one(container, execution, req)
             outputs.append(result)
     except ToolNotFound as exc:  # defensive; validated earlier
         execution.status = assert_transition(execution.status, ExecutionStatus.FAILED)
         execution.output_summary = f"tool error: {exc}"
+        _audit(container, execution, "execution.failed", reason=execution.output_summary)
         _finalize(container, execution, started)
         return execution
 
     execution.status = assert_transition(execution.status, ExecutionStatus.COMPLETED)
     execution.output_summary = json.dumps(outputs[-1]) if outputs else "no tool calls"
     execution.pending_actions = []
+    _audit(container, execution, "execution.completed",
+           metadata={"tool_calls": len(tool_calls), "cost": execution.estimated_cost})
     _finalize(container, execution, started)
     return execution
 
@@ -207,6 +243,7 @@ def resume_execution(container: RepositoryContainer, execution: Execution) -> Ex
         return execution
     execution.status = assert_transition(execution.status, ExecutionStatus.RUNNING)
     container.executions.update(execution)
+    _audit(container, execution, "execution.resumed", reason="all approvals granted")
     requests = [
         ToolCallRequest(tool=a["tool"], arguments=a.get("arguments", {}),
                         idempotency_key=a.get("idempotency_key"))
@@ -223,6 +260,7 @@ def block_execution(container: RepositoryContainer, execution: Execution, reason
     execution.status = assert_transition(execution.status, ExecutionStatus.BLOCKED)
     execution.output_summary = reason
     execution.pending_actions = []
+    _audit(container, execution, "execution.blocked", decision="BLOCKED", reason=reason)
     _finalize(container, execution, execution.started_at or _now())
     return execution
 

@@ -10,10 +10,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.application.audit_service import record_event
 from app.application.execution_service import block_execution, resume_execution
-from app.domain.enums import ApprovalStatus
+from app.domain.enums import ApprovalStatus, AuditActorType
 from app.domain.models import ApprovalRequest
 from app.infrastructure.container import RepositoryContainer
+
+
+def _trace_id(container: RepositoryContainer, execution_id: str) -> str | None:
+    execution = container.executions.get(execution_id)
+    return execution.trace_id if execution else None
 
 
 class ApprovalNotFound(Exception):
@@ -50,6 +56,10 @@ def approve(container: RepositoryContainer, approval_id: str, actor_user_id: str
     approval.resolved_at = _now()
     approval.resolved_by = actor_user_id
     container.approvals.update(approval)
+    record_event(container, action="approval.granted", resource_type="approval",
+                 resource_id=approval.id, actor_type=AuditActorType.USER, actor_id=actor_user_id,
+                 decision="APPROVED", reason=f"{approval.requested_from_role.value} approved",
+                 trace_id=_trace_id(container, approval.execution_id))
 
     siblings = container.approvals.list_for_execution(approval.execution_id)
     if all(s.status is ApprovalStatus.APPROVED for s in siblings):
@@ -72,6 +82,10 @@ def reject(container: RepositoryContainer, approval_id: str, actor_user_id: str)
     approval.resolved_at = _now()
     approval.resolved_by = actor_user_id
     container.approvals.update(approval)
+    record_event(container, action="approval.rejected", resource_type="approval",
+                 resource_id=approval.id, actor_type=AuditActorType.USER, actor_id=actor_user_id,
+                 decision="REJECTED", reason=f"{approval.requested_from_role.value} rejected",
+                 trace_id=_trace_id(container, approval.execution_id))
 
     # Any remaining pending approvals are moot; expire them and block the execution.
     for sibling in container.approvals.list_for_execution(approval.execution_id):

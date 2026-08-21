@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     # Direct Gemini Developer API key (alternative to Vertex AI). Optional.
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
 
+    # --- Observability ----------------------------------------------------
+    # When enabled with a GCP project, traces export to Cloud Trace; otherwise the
+    # audit trail retains local, trace-correlated telemetry.
+    otel_enabled: bool = Field(default=False, alias="OTEL_ENABLED")
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_csv(cls, value: object) -> object:

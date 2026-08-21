@@ -23,6 +23,12 @@ dev = [
 ai = [
     "google-genai>=1.0",
 ]
+# OpenTelemetry export to Cloud Trace (P09). Optional: without it the audit trail
+# retains local, trace-correlated telemetry.
+otel = [
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-gcp-trace>=1.6",
+]
 
 [build-system]
 requires = ["setuptools>=68"]

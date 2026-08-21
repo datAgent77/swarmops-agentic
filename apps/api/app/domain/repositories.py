@@ -181,6 +181,9 @@ class AuditRepository(ABC):
     @abstractmethod
     def list_for_resource(self, resource_type: str, resource_id: str) -> Sequence[AuditEvent]: ...
 
+    @abstractmethod
+    def list_for_trace(self, trace_id: str) -> Sequence[AuditEvent]: ...
+
 
 class RiskAssessmentRepository(ABC):
     @abstractmethod
