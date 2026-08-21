@@ -31,7 +31,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | Phase | Title | Status |
 |-------|-------|--------|
 | P00 | Repository Foundation & Architecture | ✅ complete |
-| P01 | Domain Model, Repositories & Demo Data | ⬜ pending |
+| P01 | Domain Model, Repositories & Demo Data | ✅ complete |
 | P02 | Deterministic Risk Engine | ⬜ pending |
 | P03 | Policy Engine & Governance Rules | ⬜ pending |
 | P04 | Execution State Machine & Safe Tool Layer | ⬜ pending |
@@ -62,3 +62,22 @@ repository state — **preserve working functionality; do not rewrite from scrat
 - `make dev|test|lint`, Dockerfiles, `docker-compose.yml`, `.env.example`.
 - Architecture doc + `ADR-001-domain-first-architecture.md`.
 - Backend tests (pytest) green; ruff + mypy clean.
+
+## P01 — delivered
+
+- Domain models: Organization, User, Agent, AgentVersion, Tool, AgentDependency +
+  enums (Role, AgentStatus, AutonomyLevel, ToolType, RiskLevel, DependencyTargetType,
+  Relationship). Severity is a derived band shared with P02.
+- Repository interfaces (ports) in `domain/repositories.py`; SQLite implementations in
+  `infrastructure/` behind a `RepositoryContainer` (Firestore variant lands in P12).
+- Deterministic AcmeCorp seed: exactly **127 agents / 43 active / 9 high-risk / 3
+  quarantined**, 8 named agents (with versions), 6 tools, and CustomerRefundAgent's
+  5 dependencies. No wall-clock/randomness, so `/demo/reset` is byte-stable.
+- API: `GET /api/v1/agents` (filters: status, department, risk, search, limit/offset),
+  `GET /api/v1/agents/{id}`, `GET /api/v1/users`, `GET /api/v1/organizations/current`
+  (with fleet stats), `POST /api/v1/demo/reset`.
+- Frontend: Overview tiles from live stats + Reset Demo; Agents table with
+  filter/search + owner names; Agent detail with tabs (Overview, Dependencies,
+  Versions live; later tabs phase-tagged).
+- Tests: 15 backend tests (repository CRUD + API + deterministic reset); ruff + mypy
+  clean; frontend typecheck + lint + build green.

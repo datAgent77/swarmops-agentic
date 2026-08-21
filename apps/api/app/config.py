@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     environment: str = Field(default="development", alias="ENVIRONMENT")
     demo_mode: bool = Field(default=True, alias="DEMO_MODE")
 
+    # --- Persistence ------------------------------------------------------
+    # "local" (SQLite) today; "firestore" is added in P12 behind the same
+    # repository interfaces.
+    persistence_backend: str = Field(default="local", alias="PERSISTENCE_BACKEND")
+    sqlite_path: str = Field(default="swarmops.db", alias="SQLITE_PATH")
+
     # CORS is restricted to configured frontend origins. NoDecode disables
     # pydantic-settings' JSON parsing so a plain comma-separated env value works
     # (the validator below splits it); a JSON list is also accepted.
