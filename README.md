@@ -117,7 +117,7 @@ No secrets are committed; `.env` is gitignored.
 ## Status
 
 Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
-**Complete through P06** — 59 backend tests green; ruff + mypy clean; web build green.
+**Complete through P07** — 65 backend tests green; ruff + mypy clean; web build green.
 
 | Phase | Capability | Done |
 |-------|------------|:----:|
@@ -128,7 +128,8 @@ Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
 | P04 | Execution state machine + safe (mock) tool layer + idempotency | ✅ |
 | P05 | Durable human approval workflow (two-stage $650 refund) | ✅ |
 | P06 | Discovery → auto risk/policy → quarantine, privileged reactivation | ✅ |
-| P07–P14 | ADK+Gemini, graph, audit/OTel, security, self-evolving, cloud | ⬜ |
+| P07 | GovernanceAgent (Gemini via GenAI SDK) explains, never overrides | ✅ |
+| P08–P14 | Graph/blast-radius, audit/OTel, security, self-evolving, cloud | ⬜ |
 
 **What works today — the full governed arc runs end to end:** discover the rogue
 CustomerRefundAgent → it auto-assesses to 87/100 CRITICAL → policy quarantines it →

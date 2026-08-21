@@ -37,7 +37,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P04 | Execution State Machine & Safe Tool Layer | ✅ complete |
 | P05 | Human Approval Workflow | ✅ complete |
 | P06 | Quarantine, Discovery & Governance Lifecycle | ✅ complete |
-| P07 | Google ADK + Gemini Governance Agent | ⬜ pending |
+| P07 | Google ADK + Gemini Governance Agent | ✅ complete |
 | P08 | Agent Dependency Graph & Blast Radius | ⬜ pending |
 | P09 | Audit Trail & OpenTelemetry Observability | ⬜ pending |
 | P10 | Security Layer, Prompt Injection & Model Armor | ⬜ pending |
@@ -208,3 +208,30 @@ approve → resume exactly once`) stays coherent.
 > The full demo arc now runs end to end:
 > **discover → assess → quarantine → (reactivate under governance) → execute → pause →
 > approve → resume exactly once.**
+
+## P07 — delivered
+
+- First AI agent: **GovernanceAgent** (`app/agents/governance_agent.py`) using the
+  Google **GenAI SDK** (an accepted Google Agent Framework; set
+  `GOOGLE_GENAI_USE_VERTEXAI=true` + project to route through Vertex AI).
+- Constrained toolset (`infrastructure/governance_tools.py`) — a fixed allowlist of 8
+  tools (get_agent_metadata, get_agent_dependencies, calculate_risk,
+  get_applicable_policies, create_risk_assessment, create_approval_request,
+  record_audit_event, set_agent_status). No raw DB/repo access.
+- **The model can never override authorization.** The deterministic engine computes
+  risk + policy; the explainer produces prose only. `set_agent_status` re-checks the
+  deterministic rule *inside the tool* and refuses to activate an agent that must be
+  quarantined (or quarantine one with no basis).
+- Explanation layer (`infrastructure/gemini_explainer.py`): `GeminiExplainer` (live,
+  via GenAI SDK) with a `LocalTemplateExplainer` fallback. Truthful model status —
+  `LIVE` only when the SDK + credentials are present; otherwise `LOCAL_TEMPLATE`
+  ("Gemini not invoked"). Never claims Gemini ran when it did not.
+- API: `POST /api/v1/agents/{id}/governance-analysis` → deterministic risk + policy +
+  AI explanation + model metadata (optional `action_context` for proposed-action DENY).
+- Frontend: agent Risk tab now separates **Deterministic Risk Decision** from the
+  **Gemini Governance Explanation**, with a truthful model-status badge (LIVE vs LOCAL DEMO).
+- `google-genai` is an optional `[ai]` extra — the base install and test suite don't
+  require it; the explainer degrades gracefully without it.
+- Tests: 65 backend total (+6): fixed tool allowlist, set_agent_status can't override,
+  AI can't override QUARANTINE, AI can't override DENY, Gemini-unavailable fallback, 404.
+  Model calls are never made in tests (injected mock/local). ruff + mypy + web build green.

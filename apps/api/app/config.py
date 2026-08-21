@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     google_cloud_location: str = Field(default="us-central1", alias="GOOGLE_CLOUD_LOCATION")
     google_genai_use_vertexai: bool = Field(default=False, alias="GOOGLE_GENAI_USE_VERTEXAI")
     gemini_model: str = Field(default="gemini-3.5-flash", alias="GEMINI_MODEL")
+    # Direct Gemini Developer API key (alternative to Vertex AI). Optional.
+    gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
 
     @field_validator("cors_origins", mode="before")
     @classmethod

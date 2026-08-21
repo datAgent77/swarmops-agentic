@@ -293,6 +293,34 @@ export async function assessRisk(agentId: string): Promise<RiskAssessment> {
   return res.json() as Promise<RiskAssessment>;
 }
 
+export type GovernanceAnalysis = {
+  risk: RiskAssessment;
+  policy: {
+    matched: boolean;
+    action: PolicyAction;
+    policy_id: string | null;
+    policy_name: string | null;
+    required_roles: string[];
+    reason: string;
+  };
+  explanation: {
+    text: string;
+    model_status: "LIVE" | "LOCAL_TEMPLATE";
+    model_name: string;
+    provider: string;
+  };
+};
+
+export async function runGovernanceAnalysis(agentId: string): Promise<GovernanceAnalysis> {
+  const res = await fetch(`${API_URL}/api/v1/agents/${agentId}/governance-analysis`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action_context: {} }),
+  });
+  if (!res.ok) throw new Error(`governance-analysis → HTTP ${res.status}`);
+  return res.json() as Promise<GovernanceAnalysis>;
+}
+
 export async function resetDemo() {
   const res = await fetch(`${API_URL}/api/v1/demo/reset`, { method: "POST" });
   if (!res.ok) throw new Error(`reset → HTTP ${res.status}`);

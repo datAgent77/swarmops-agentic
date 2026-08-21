@@ -16,6 +16,7 @@ from app.api.routes import (
     approvals,
     demo,
     executions,
+    governance,
     health,
     lifecycle,
     organizations,
@@ -55,6 +56,7 @@ def create_app(container: RepositoryContainer | None = None) -> FastAPI:
     app.include_router(organizations.router)
     app.include_router(agents.router)
     app.include_router(lifecycle.router)
+    app.include_router(governance.router)
     app.include_router(risk.router)
     app.include_router(policies.router)
     app.include_router(executions.router)

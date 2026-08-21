@@ -18,6 +18,11 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
 ]
+# The Gemini governance explanation layer (P07). Optional: without it the
+# GovernanceAgent degrades to a clearly-labeled local template.
+ai = [
+    "google-genai>=1.0",
+]
 
 [build-system]
 requires = ["setuptools>=68"]

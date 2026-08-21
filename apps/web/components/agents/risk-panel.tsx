@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldAlert, Sparkles } from "lucide-react";
+import { Bot, ShieldAlert, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SeverityBadge } from "@/components/ui/status-badge";
-import { assessRisk, fetchRisk, type RiskAssessment } from "@/lib/api";
+import {
+  assessRisk,
+  fetchRisk,
+  runGovernanceAnalysis,
+  type GovernanceAnalysis,
+  type RiskAssessment,
+} from "@/lib/api";
 
 // Dimension → assessment field + cap. Labels match the engine's weighting.
 const DIMENSIONS: { label: string; key: keyof RiskAssessment; cap: number }[] = [
@@ -33,6 +39,8 @@ export function RiskPanel({ agentId }: { agentId: string }) {
   const [risk, setRisk] = useState<RiskAssessment | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [gov, setGov] = useState<GovernanceAnalysis | null>(null);
+  const [govBusy, setGovBusy] = useState(false);
 
   useEffect(() => {
     fetchRisk(agentId)
@@ -50,14 +58,25 @@ export function RiskPanel({ agentId }: { agentId: string }) {
     }
   };
 
+  const runGovernance = async () => {
+    setGovBusy(true);
+    try {
+      const result = await runGovernanceAnalysis(agentId);
+      setGov(result);
+      setRisk(result.risk); // analysis also (re)computes the deterministic assessment
+    } finally {
+      setGovBusy(false);
+    }
+  };
+
   if (!loaded) return <div className="text-sm text-muted-foreground">Loading risk…</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
-          Risk score = <span className="font-medium text-foreground">deterministic engine</span> ·
-          AI explanation = future layer (P07)
+          <span className="font-medium text-foreground">Deterministic Risk Decision</span> —
+          computed by the engine. The Gemini explanation below never changes it.
         </div>
         <Button size="sm" variant={risk ? "outline" : "default"} onClick={runAssessment} disabled={busy}>
           <ShieldAlert className={busy ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />
@@ -129,11 +148,46 @@ export function RiskPanel({ agentId }: { agentId: string }) {
           <div className="flex items-center gap-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
             <Sparkles className="h-4 w-4 shrink-0" />
             The score above is computed by a deterministic engine with no LLM in the loop.
-            A Gemini-generated natural-language explanation is layered on in P07 and can never
-            override this decision.
+            The Gemini explanation below is layered on top and can never override this decision.
           </div>
         </>
       )}
+
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bot className="h-4 w-4" /> Gemini Governance Explanation
+            </CardTitle>
+            {gov && (
+              <Badge variant={gov.explanation.model_status === "LIVE" ? "low" : "secondary"}>
+                {gov.explanation.model_status === "LIVE"
+                  ? `Gemini: LIVE (${gov.explanation.model_name})`
+                  : "Security scanner: LOCAL DEMO"}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {gov ? (
+            <>
+              <p className="text-sm text-muted-foreground">{gov.explanation.text}</p>
+              <div className="text-xs text-muted-foreground">
+                Provider: {gov.explanation.provider} · Deterministic action stands:{" "}
+                <span className="font-medium text-foreground">{gov.policy.action}</span>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Ask the GovernanceAgent to explain the deterministic decision in natural language.
+            </p>
+          )}
+          <Button size="sm" variant={gov ? "outline" : "default"} onClick={runGovernance} disabled={govBusy}>
+            <Bot className={govBusy ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />
+            {gov ? "Re-run analysis" : "Explain with Gemini"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

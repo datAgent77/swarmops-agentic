@@ -14,6 +14,7 @@ from app.domain.models import (
     AgentVersion,
     ApprovalRequest,
     Execution,
+    RiskAssessment,
     ToolCall,
     User,
 )
@@ -151,3 +152,21 @@ class QuarantineRequest(BaseModel):
 
 class ActivateRequest(BaseModel):
     actor_user_id: str
+
+
+class GovernanceAnalysisRequest(BaseModel):
+    # Optional extra policy context (e.g. a proposed action) merged into evaluation.
+    action_context: dict[str, Any] = Field(default_factory=dict)
+
+
+class ExplanationOut(BaseModel):
+    text: str
+    model_status: str
+    model_name: str
+    provider: str
+
+
+class GovernanceAnalysisResponse(BaseModel):
+    risk: RiskAssessment
+    policy: PolicyDecisionOut
+    explanation: ExplanationOut
