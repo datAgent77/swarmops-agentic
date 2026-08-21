@@ -19,6 +19,7 @@ from app.application.risk_service import assess_agent
 from app.domain.enums import AgentStatus, AuditActorType, PolicyAction, Role
 from app.domain.policy_engine import evaluate_policies
 from app.infrastructure.container import RepositoryContainer
+from app.infrastructure.events import AGENT_DISCOVERED, AGENT_QUARANTINED, DomainEvent
 
 _PRIVILEGED_ROLES = frozenset({Role.PLATFORM_ADMIN, Role.SECURITY_OFFICER})
 
@@ -76,6 +77,7 @@ async def run_discovery(
         _set_status(container, agent.id, AgentStatus.DISCOVERED)
         record_event(container, action="agent.discovered", resource_type="agent",
                      resource_id=agent.id, reason=discovered.note)
+        container.event_bus.publish(DomainEvent(AGENT_DISCOVERED, {"agent_id": agent.id}))
         _set_status(container, agent.id, AgentStatus.PENDING_REVIEW)
         record_event(container, action="agent.pending_review", resource_type="agent",
                      resource_id=agent.id)
@@ -100,6 +102,8 @@ async def run_discovery(
             container.agents.update(agent)
             record_event(container, action="agent.quarantined", resource_type="agent",
                          resource_id=agent.id, decision="QUARANTINE", reason=reason)
+            container.event_bus.publish(DomainEvent(
+                AGENT_QUARANTINED, {"agent_id": agent.id, "reason": reason}))
             to_status = "QUARANTINED"
         else:
             _set_status(container, agent.id, AgentStatus.APPROVED)
@@ -141,6 +145,8 @@ def quarantine_agent(container: RepositoryContainer, agent_id: str, actor_user_i
     record_event(container, action="agent.quarantined", resource_type="agent", resource_id=agent_id,
                  actor_type=AuditActorType.USER, actor_id=actor_user_id, decision="QUARANTINE",
                  reason=agent.quarantine_reason)
+    container.event_bus.publish(DomainEvent(
+        AGENT_QUARANTINED, {"agent_id": agent_id, "reason": agent.quarantine_reason}))
     return agent
 
 

@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # repository interfaces.
     persistence_backend: str = Field(default="local", alias="PERSISTENCE_BACKEND")
     sqlite_path: str = Field(default="swarmops.db", alias="SQLITE_PATH")
+    # Domain event bus: "inmemory" (default) or "pubsub" (needs a GCP project).
+    event_bus: str = Field(default="inmemory", alias="EVENT_BUS")
 
     # CORS is restricted to configured frontend origins. NoDecode disables
     # pydantic-settings' JSON parsing so a plain comma-separated env value works

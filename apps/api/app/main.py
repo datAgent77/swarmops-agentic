@@ -31,6 +31,7 @@ from app.api.routes import (
 )
 from app.config import get_settings
 from app.infrastructure.container import RepositoryContainer
+from app.infrastructure.events import build_event_bus
 from app.infrastructure.telemetry import configure_tracing
 
 
@@ -52,7 +53,12 @@ def create_app(container: RepositoryContainer | None = None) -> FastAPI:
     )
 
     if container is None:
-        container = RepositoryContainer(settings.sqlite_path)
+        container = RepositoryContainer(
+            settings.sqlite_path,
+            backend=settings.persistence_backend,
+            project=settings.google_cloud_project,
+            event_bus=build_event_bus(settings.event_bus, settings.google_cloud_project),
+        )
         if settings.demo_mode:
             container.seed_if_empty()
     app.state.container = container

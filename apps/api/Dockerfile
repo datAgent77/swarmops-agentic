@@ -7,12 +7,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install dependencies first for better layer caching.
+# Copy source, then install the package with the Google Cloud + OpenTelemetry extras
+# so the deployed image can use Firestore, Pub/Sub, and Cloud Trace.
 COPY pyproject.toml ./
-RUN pip install --upgrade pip && pip install .
-
-# Copy application source.
 COPY app ./app
+RUN pip install --upgrade pip && pip install ".[gcp,otel]"
 
 # Cloud Run provides $PORT; default to 8080 locally.
 ENV PORT=8080

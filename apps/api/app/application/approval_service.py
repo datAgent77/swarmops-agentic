@@ -15,6 +15,7 @@ from app.application.execution_service import block_execution, resume_execution
 from app.domain.enums import ApprovalStatus, AuditActorType
 from app.domain.models import ApprovalRequest
 from app.infrastructure.container import RepositoryContainer
+from app.infrastructure.events import APPROVAL_GRANTED, DomainEvent
 
 
 def _trace_id(container: RepositoryContainer, execution_id: str) -> str | None:
@@ -60,6 +61,9 @@ def approve(container: RepositoryContainer, approval_id: str, actor_user_id: str
                  resource_id=approval.id, actor_type=AuditActorType.USER, actor_id=actor_user_id,
                  decision="APPROVED", reason=f"{approval.requested_from_role.value} approved",
                  trace_id=_trace_id(container, approval.execution_id))
+    container.event_bus.publish(DomainEvent(
+        APPROVAL_GRANTED, {"approval_id": approval.id, "execution_id": approval.execution_id,
+                           "role": approval.requested_from_role.value}))
 
     siblings = container.approvals.list_for_execution(approval.execution_id)
     if all(s.status is ApprovalStatus.APPROVED for s in siblings):

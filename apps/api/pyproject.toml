@@ -29,6 +29,12 @@ otel = [
     "opentelemetry-sdk>=1.20",
     "opentelemetry-exporter-gcp-trace>=1.6",
 ]
+# Google Cloud persistence + eventing (P12). Optional: the default backend is local
+# SQLite with an in-memory event bus.
+gcp = [
+    "google-cloud-firestore>=2.16",
+    "google-cloud-pubsub>=2.21",
+]
 
 [build-system]
 requires = ["setuptools>=68"]

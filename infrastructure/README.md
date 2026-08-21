@@ -1,6 +1,14 @@
 # infrastructure/
 
-Deployment and cloud infrastructure — Terraform / scripts for Cloud Run, Firestore,
-Pub/Sub, service accounts, IAM, Secret Manager, and Artifact Registry.
+Deployment and cloud infrastructure for SwarmOps on Google Cloud (P12).
 
-Introduced in **P12**. Empty in P00 by design. No credentials are ever committed.
+- `terraform/` — Terraform for enabled APIs, Artifact Registry, Firestore (native),
+  Pub/Sub topics (one per domain event), a least-privilege service account + IAM,
+  a Secret Manager secret, and two Cloud Run services (API + Web).
+- `deploy.sh` — a gcloud-only alternative that builds, pushes, and deploys both services.
+
+See [`docs/deployment/google-cloud.md`](../docs/deployment/google-cloud.md) for the full
+walkthrough (build, secrets, env vars, Firestore emulator, and verification).
+
+No credentials are committed here. Secrets live in Secret Manager and are referenced by
+Cloud Run at deploy time.

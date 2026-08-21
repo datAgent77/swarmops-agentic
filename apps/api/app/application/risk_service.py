@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from app.domain.models import AgentVersion, RiskAssessment
 from app.domain.risk_engine import RiskInput, RiskResult, assess
 from app.infrastructure.container import RepositoryContainer
+from app.infrastructure.events import RISK_ASSESSMENT_COMPLETED, DomainEvent
 
 
 class AgentNotFound(Exception):
@@ -63,6 +64,10 @@ def assess_agent(container: RepositoryContainer, agent_id: str) -> RiskAssessmen
     agent.risk_score = result.total
     container.agents.update(agent)
 
+    container.event_bus.publish(DomainEvent(
+        RISK_ASSESSMENT_COMPLETED,
+        {"agent_id": agent_id, "score": result.total, "severity": result.severity.value},
+    ))
     return assessment
 
 

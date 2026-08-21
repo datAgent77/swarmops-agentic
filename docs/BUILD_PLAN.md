@@ -42,7 +42,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P09 | Audit Trail & OpenTelemetry Observability | ✅ complete |
 | P10 | Security Layer, Prompt Injection & Model Armor | ✅ complete |
 | P11 | Agent Version Intelligence & Self-Evolving Governance | ✅ complete |
-| P12 | Google Cloud Persistence, Pub/Sub & Cloud Run | ⬜ pending |
+| P12 | Google Cloud Persistence, Pub/Sub & Cloud Run | ✅ complete |
 | P13 | Gemini Enterprise Agent Platform Adapters | ⬜ pending |
 | P14 | Demo Hardening, UX Polish & Submission Readiness | ⬜ pending |
 
@@ -322,3 +322,26 @@ approve → resume exactly once`) stays coherent.
 - Tests: 91 backend total (+10): diff detection, compliance/performance regression rules,
   threshold control, v17 REJECTED with exact numbers/reason, list, evaluate flip, audit.
   ruff + mypy + web build green.
+
+## P12 — delivered
+
+- **Firestore adapter** (`infrastructure/firestore_repos.py`) behind the same repository
+  interfaces, selected by `PERSISTENCE_BACKEND=firestore`. Uniform document mapping via
+  `model_dump(mode="json")` / `model_validate`. Local SQLite stays the default and
+  unchanged — nothing above the infrastructure layer knows the backend.
+- **Event bus** (`infrastructure/events.py`): `EventBus` interface + `InMemoryEventBus`
+  (default) + `PubSubEventBus`. Seven domain events published — AgentDiscovered,
+  RiskAssessmentCompleted, AgentQuarantined, ApprovalRequested, ApprovalGranted,
+  ToolCallCompleted, ExecutionCompleted. Best-effort publish never breaks governance.
+- `RepositoryContainer` now selects the backend + carries the event bus; `google-cloud-*`
+  are optional `[gcp]` extras (base install + tests never require them).
+- **Cloud Run**: production Dockerfiles (API installs `[gcp,otel]`), scale-to-zero,
+  health checks, env-driven config.
+- **Infrastructure** (`infrastructure/terraform/`): APIs, Artifact Registry, Firestore
+  (native), seven Pub/Sub topics, least-privilege service account + IAM, Secret Manager,
+  and both Cloud Run services. Plus a gcloud `deploy.sh`.
+- **Docs**: `docs/deployment/google-cloud.md` (build, secrets, env, Firestore emulator,
+  verification, cost control) + ADR-003 (persistence) + ADR-004 (event bus).
+- No credentials committed; secrets live in Secret Manager.
+- Tests: 95 backend total (+4): event-bus selection, local default backend, Firestore
+  optionality, and a full governed flow publishing all seven events. ruff + mypy green.

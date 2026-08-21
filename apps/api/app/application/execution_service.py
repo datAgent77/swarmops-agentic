@@ -22,6 +22,12 @@ from app.domain.execution_state import assert_transition
 from app.domain.models import Execution, ToolCall
 from app.domain.policy_engine import PolicyDecision, evaluate_policies
 from app.infrastructure.container import RepositoryContainer
+from app.infrastructure.events import (
+    APPROVAL_REQUESTED,
+    EXECUTION_COMPLETED,
+    TOOL_CALL_COMPLETED,
+    DomainEvent,
+)
 from app.infrastructure.tool_layer import KNOWN_TOOLS, ToolNotFound, is_state_changing, run_tool
 
 
@@ -107,6 +113,8 @@ def _run_one(container: RepositoryContainer, execution: Execution, req: ToolCall
     _audit(container, execution, "tool_call.completed", resource_type="tool_call",
            resource_id=call.id, reason=f"{req.tool}{' (replay)' if replay else ''}",
            metadata={"tool": req.tool, "duration_ms": call.duration_ms})
+    container.event_bus.publish(DomainEvent(
+        TOOL_CALL_COMPLETED, {"execution_id": execution.id, "tool": req.tool, "replay": replay}))
     return call, result
 
 
@@ -204,6 +212,8 @@ def _open_approvals(
         container.approvals.add(approval)
         _audit(container, execution, "approval.requested", resource_type="approval",
                resource_id=approval.id, reason=f"requires {role}")
+        container.event_bus.publish(DomainEvent(
+            APPROVAL_REQUESTED, {"execution_id": execution.id, "approval_id": approval.id, "role": role}))
 
 
 def _run_and_complete(
@@ -229,6 +239,8 @@ def _run_and_complete(
     execution.pending_actions = []
     _audit(container, execution, "execution.completed",
            metadata={"tool_calls": len(tool_calls), "cost": execution.estimated_cost})
+    container.event_bus.publish(DomainEvent(
+        EXECUTION_COMPLETED, {"execution_id": execution.id, "agent_id": execution.agent_id}))
     _finalize(container, execution, started)
     return execution
 
