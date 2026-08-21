@@ -44,7 +44,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P11 | Agent Version Intelligence & Self-Evolving Governance | ✅ complete |
 | P12 | Google Cloud Persistence, Pub/Sub & Cloud Run | ✅ complete |
 | P13 | Gemini Enterprise Agent Platform Adapters | ✅ complete |
-| P14 | Demo Hardening, UX Polish & Submission Readiness | ⬜ pending |
+| P14 | Demo Hardening, UX Polish & Submission Readiness | ✅ complete |
 
 ## P06 note — keep the demo story in sync with seed data
 
@@ -367,3 +367,44 @@ approve → resume exactly once`) stays coherent.
 - Docs: `docs/integrations.md` (live vs simulated + how to enable) + ADR-005 (adapter pattern).
 - Tests: 99 backend total (+4): all expected integrations present, truthful local status,
   no demo provider marked connected, every integration has enable docs. ruff + mypy + web green.
+
+## P14 — delivered
+
+- **Guided Demo page** (`/demo`, in the sidebar): 8 buttons — Discover Rogue Agent, Run
+  Risk Assessment, Review Quarantine, Apply Refund Governance, Trigger $650 Refund,
+  Manager Approves, Finance Approves, View Audit Trace — each calling **real backend
+  logic** (no fake animation), with a RESET DEMO button.
+- **End-to-end backend test** (`test_demo_e2e.py`): reset → discover rogue → risk 87 →
+  quarantine → governed activation → $650 execution → manager approval → finance approval
+  → refund completes **exactly once** → full audit trace → wrong-role rejected.
+- **Docs**: `docs/demo/4-minute-demo.md`, `docs/architecture/execution-sequence.md`
+  (Mermaid sequence), `docs/security/threat-model.md`; ADR-002 (Gemini governance agent)
+  and ADR-006 (append-only audit) — ADRs 001–006 now present.
+- **Final README**: Problem, Why Agent Sprawl Matters, Solution, Architecture (+ diagram),
+  Google Technologies Used, Demo Scenario, Local Development, Cloud Deployment, Environment
+  Variables, Testing, Security Model, Repository Structure, Known Limitations, Future Roadmap.
+- Tests: **100 backend total** (+1 E2E). ruff + mypy clean; web tsc + eslint + build green.
+
+## Production readiness — verified
+
+- [x] No secrets committed (`.gitignore`, Secret Manager, `.env` template only)
+- [x] No fake integration marked LIVE (truthful status; local smoke confirmed)
+- [x] No arbitrary `eval` (policy engine is a whitelisted operator evaluator)
+- [x] LLM cannot override deterministic authorization (tested: DENY + QUARANTINE stand)
+- [x] Quarantine blocks execution (409, tested)
+- [x] Idempotency verified (refund executes exactly once, E2E)
+- [x] Demo reset deterministic (asserted metrics + reset test)
+- [x] Google Cloud deployment documented (Terraform + deploy.sh + docs)
+- [x] Tests passing (100), lint passing (ruff), typecheck passing (mypy + tsc)
+
+## Hackathon checklist — verified
+
+- [x] Gemini 3.5+ via the GenAI SDK / Vertex AI (default `gemini-3.5-flash`)
+- [x] A Google Agent Framework (GenAI SDK) with a constrained GovernanceAgent
+- [x] Google Cloud infrastructure (Cloud Run, Firestore, Pub/Sub, Cloud Trace, Secret Manager)
+- [x] Autonomous governance action (discover → assess → quarantine)
+- [x] Long-running / pause-resume workflow (WAITING_APPROVAL → resume exactly once)
+- [x] Persistent state (Firestore/SQLite) + multi-agent fleet (127 agents)
+- [x] Governance, security, human approval, observability, auditability — all shown
+- [x] Architecture diagrams complete; reproducible repo; Cloud deployment proof available
+- [x] Demo scenario completes in < 4 minutes (guided demo + script)

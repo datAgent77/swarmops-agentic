@@ -405,6 +405,21 @@ export function fetchExecution(id: string) {
   return getJSON<ExecutionDetail>(`/api/v1/executions/${id}`);
 }
 
+export async function createExecution(
+  agentId: string,
+  inputSummary: string,
+  toolCalls: { tool: string; arguments?: Record<string, unknown>; idempotency_key?: string }[],
+): Promise<ExecutionDetail> {
+  const res = await fetch(`${API_URL}/api/v1/executions`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ agent_id: agentId, input_summary: inputSummary, tool_calls: toolCalls }),
+  });
+  if (res.status === 409) throw new Error("Agent is quarantined and cannot execute.");
+  if (!res.ok) throw new Error(`execution → HTTP ${res.status}`);
+  return res.json() as Promise<ExecutionDetail>;
+}
+
 export function fetchFleetGraph() {
   return getJSON<GraphResponse>("/api/v1/graph");
 }

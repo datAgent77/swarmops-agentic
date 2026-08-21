@@ -6,6 +6,7 @@ import {
   GitBranch,
   LayoutDashboard,
   ListChecks,
+  PlayCircle,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -23,6 +24,7 @@ export type NavItem = {
  *  populated across P01–P14. Order intentionally follows the operator journey:
  *  see the fleet → inspect agents → govern → observe → configure. */
 export const NAV_ITEMS: NavItem[] = [
+  { label: "Guided Demo", href: "/demo", icon: PlayCircle },
   { label: "Overview", href: "/overview", icon: LayoutDashboard },
   { label: "Agents", href: "/agents", icon: Boxes },
   { label: "Agent Graph", href: "/graph", icon: GitBranch },

@@ -2,148 +2,192 @@
 
 **Discover. Govern. Orchestrate. Observe.**
 
-SwarmOps sits above agent runtimes and control planes to make an AI workforce safe
-to run in a real company: agent discovery, deterministic risk & policy enforcement,
-human approvals, blast-radius analysis, append-only audit, and observability.
+SwarmOps sits **above** agent runtimes and control planes and makes an AI workforce safe
+to run in a real company: agent discovery, deterministic risk & policy enforcement, human
+approvals, dependency/blast-radius analysis, self-evolving governance, an append-only
+audit trail, and observability.
 
 - **Hackathon track:** Fortified Enterprise Fleet
-- **Built for:** Google All Things Agentic Hackathon 2026
+- **Built for Google All Things Agentic Hackathon 2026.**
+- **Status:** P00–P14 complete · **100 backend tests green** · ruff + mypy clean · web build green
 
-> **Governance is deterministic.** No LLM sits in the authorization path. Gemini
-> (via Google ADK / Vertex AI, from P07) explains and analyzes — it can never
-> override a DENY or QUARANTINE.
+> **The core invariant: governance is deterministic. No LLM sits in the authorization
+> path.** Gemini (via the Google GenAI SDK / Vertex AI) explains risk and recommends
+> remediation — it can never override a DENY or QUARANTINE. This is enforced in code and
+> proven by tests that feed a hostile explainer and assert the decision stands.
+
+## The problem
+
+Autonomous agents are entering the enterprise faster than governance can adapt. Companies
+wire up agents that can deploy code, move money, and touch customer data — with none of
+the controls they demand of human employees. It's impressive right up until an agent does
+something irreversible because the *model* decided to.
+
+## Why agent sprawl matters
+
+A single team spins up dozens of agents across tools, MCPs, databases, and external APIs.
+Nobody owns the fleet. There's no risk profile, no policy, no kill switch, no audit. One
+over-privileged agent with a path to PII and a payment API is a breach waiting to happen.
+
+## The solution
+
+SwarmOps manages an AI workforce with the same rigor used for people: clear authority,
+human approval on high-risk actions, a complete audit trail, and safe, reversible change
+over time. Every autonomous agent gets an **owner, identity, policy, risk profile, trace,
+and kill switch.**
+
+## What it does (the full governed arc)
+
+Discover the rogue **CustomerRefundAgent** → it auto-assesses to **87/100 CRITICAL** →
+policy **quarantines** it → a privileged operator **reactivates** it under governance →
+a **$650 refund** runs through the state machine → **pauses for two-stage human
+approval** → **resumes and executes exactly once** — with an append-only, trace-correlated
+audit throughout. Plus: a React Flow **dependency graph + blast radius**, a **security
+scanner** that blocks prompt injection / PII export, and **self-evolving governance** that
+rejects a candidate agent version whose compliance regresses.
+
+## Architecture
+
+| Layer | Folder | Tech | Hosting |
+|-------|--------|------|---------|
+| Console | `apps/web` | Next.js 14 (App Router, Tailwind, shadcn-style, React Flow) | Cloud Run |
+| Backend | `apps/api` | FastAPI, layered `api / application / domain / infrastructure` | Cloud Run |
+| Persistence | — | SQLite (local) / **Firestore** (cloud) behind one interface | Cloud SQL-free |
+| Eventing | — | In-memory (local) / **Pub/Sub** (cloud) | — |
+| AI | `apps/api/app/agents` | **GovernanceAgent** via Google **GenAI SDK** / **Vertex AI** | — |
+
+See [`docs/architecture/system.md`](docs/architecture/system.md) (component + governance
+diagrams), [`docs/architecture/execution-sequence.md`](docs/architecture/execution-sequence.md)
+(the governed refund sequence), and the ADRs in [`docs/adr/`](docs/adr/).
+
+```mermaid
+flowchart LR
+    UI["Next.js console"] -->|/api/v1| API["FastAPI (layered)"]
+    API --> RISK["Deterministic risk engine"]
+    API --> POL["Deterministic policy engine"]
+    POL -->|REQUIRE_APPROVAL| HUM["Human approvals"]
+    API --> EXEC["Execution state machine + safe tools"]
+    GEM["Gemini (GenAI SDK / Vertex AI)"] -. explains, never overrides .-> POL
+    API --> AUD["Append-only audit + traces"]
+    API --> FS[("Firestore")]
+    API --> PS(("Pub/Sub"))
+```
+
+## Google technologies used
+
+- **Gemini** (via the Google **GenAI SDK**, an accepted Google Agent Framework) — the
+  GovernanceAgent's explanation layer; **Vertex AI** routing when configured.
+- **Cloud Run** — API + web, scale-to-zero.
+- **Firestore** — cloud persistence behind the repository interfaces (`PERSISTENCE_BACKEND=firestore`).
+- **Pub/Sub** — domain event bus (`EVENT_BUS=pubsub`).
+- **Cloud Trace** — OpenTelemetry export of execution traces (`OTEL_ENABLED=true`).
+- **Model Armor** — inline security guardrails adapter (reuses the security scanner).
+- **Secret Manager, Artifact Registry, IAM** — provisioned by Terraform.
+- **Agent Registry / Runtime / Memory Bank / Gateway** — adapter seams (P13) with truthful
+  CONNECTED / DEMO_MODE / NOT_CONFIGURED status on the Integrations page.
+
+## Demo scenario
+
+Open the **Guided Demo** page (`/demo`) and run the 8 steps — each calls real backend
+logic. Full narration: [`docs/demo/4-minute-demo.md`](docs/demo/4-minute-demo.md).
 
 ## Repository structure
 
 ```
 swarmops-agentic/
 ├── apps/
-│   ├── web/            Next.js console (App Router, Tailwind, shadcn/ui)
-│   └── api/            FastAPI backend (api / application / domain / infrastructure)
-├── agents/            Google ADK agents (P07+)
+│   ├── web/            Next.js console
+│   └── api/            FastAPI backend (api/application/domain/infrastructure)
+├── agents/            Google agent-framework agents (GovernanceAgent lives in apps/api/app/agents)
 ├── packages/          Shared contracts/utilities
-├── infrastructure/    Terraform / deploy scripts (P12+)
-├── docs/              Architecture, ADRs, security, deployment, demo
-├── tests/             Cross-cutting / E2E tests (P14)
-├── docker-compose.yml
-├── Makefile
-└── .env.example
+├── infrastructure/    Terraform + deploy.sh (Cloud Run, Firestore, Pub/Sub, IAM, Secret Manager)
+├── docs/              architecture, adr, security, deployment, demo, integrations
+├── docker-compose.yml, Makefile, .env.example
 ```
-
-See [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) for the phased roadmap (P00–P14) and
-[`docs/architecture/system.md`](docs/architecture/system.md) for the architecture.
 
 ## Prerequisites
 
-- Python **3.11+** (developed on 3.13)
-- Node.js **20+** (developed on 22) and npm
-- Optional: Docker + Docker Compose
+- Python **3.11+** (developed on 3.13), Node **20+** (developed on 22) and npm
+- Optional: Docker + Docker Compose; `gcloud` for cloud deploy
 
-## Local setup
-
-Copy the environment template:
+## Local development
 
 ```bash
 cp .env.example .env
+make install          # API venv + web deps
+make dev              # API :8080 + Web :3000
 ```
 
-Install everything (creates the API virtualenv and installs the web deps):
-
-```bash
-make install
-```
-
-Or install each side individually:
-
-```bash
-make install-api
-make install-web
-```
-
-## Run
-
-Start the backend (`:8080`) and frontend (`:3000`) together:
-
-```bash
-make dev
-```
-
-Or run them separately:
-
-```bash
-make dev-api    # FastAPI on http://localhost:8080
-make dev-web    # Next.js on http://localhost:3000
-```
-
-Verify the backend:
+Open **http://localhost:3000** → it redirects to the fleet Overview; start with the
+**Guided Demo** in the sidebar. Verify the backend:
 
 ```bash
 curl http://localhost:8080/health
 curl http://localhost:8080/api/v1/status
 ```
 
-Open the console at **http://localhost:3000** — it redirects to the fleet Overview.
-The Overview page shows a live backend-connectivity check.
+With Docker: `make up` (web :3000, api :8080).
 
-## With Docker
+## Cloud deployment
 
-```bash
-make up      # docker compose up --build  (web :3000, api :8080)
-make down
-```
-
-## Quality
+Full walkthrough: [`docs/deployment/google-cloud.md`](docs/deployment/google-cloud.md).
 
 ```bash
-make test    # backend tests (pytest)
-make lint    # ruff + mypy (backend), eslint + tsc (frontend)
+# gcloud one-shot (build + push + deploy, scale-to-zero)
+PROJECT_ID=my-project REGION=us-central1 ./infrastructure/deploy.sh
+# or Terraform
+cd infrastructure/terraform && terraform init && terraform apply -var project_id=$PROJECT_ID ...
 ```
 
 ## Environment variables
 
 | Variable | Purpose |
 |----------|---------|
-| `ENVIRONMENT` | `development` / `production` |
-| `DEMO_MODE` | Enables the deterministic demo scenario |
-| `CORS_ORIGINS` | Comma-separated allowed frontend origins (API) |
-| `NEXT_PUBLIC_API_URL` | Backend base URL used by the web app |
-| `GOOGLE_CLOUD_PROJECT` | GCP project (later phases) |
-| `GOOGLE_CLOUD_LOCATION` | Vertex AI / GCP region |
-| `GOOGLE_GENAI_USE_VERTEXAI` | Route GenAI/ADK through Vertex AI |
-| `GEMINI_MODEL` | Gemini model id (e.g. `gemini-3.5-flash`) |
+| `ENVIRONMENT`, `DEMO_MODE` | runtime + demo seeding |
+| `PERSISTENCE_BACKEND` | `local` (SQLite) or `firestore` |
+| `EVENT_BUS` | `inmemory` or `pubsub` |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | GCP project / region |
+| `GOOGLE_GENAI_USE_VERTEXAI`, `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini config |
+| `OTEL_ENABLED` | export traces to Cloud Trace |
+| `MODEL_ARMOR_ENABLED` | use Google Model Armor |
+| `NEXT_PUBLIC_API_URL` | backend base URL (web) |
 
-No secrets are committed; `.env` is gitignored.
+No secrets are committed; `.env` is gitignored and cloud secrets live in Secret Manager.
 
-## Status
+## Testing
 
-Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
-**Complete through P13** — 99 backend tests green; ruff + mypy clean; web build green.
+```bash
+make test    # 100 backend tests (pytest)
+make lint    # ruff + mypy (backend), eslint + tsc (frontend)
+```
 
-| Phase | Capability | Done |
-|-------|------------|:----:|
-| P00 | Monorepo foundation, health/status, operational shell | ✅ |
-| P01 | Domain model, repositories, deterministic 127-agent AcmeCorp seed | ✅ |
-| P02 | Deterministic risk engine (CustomerRefundAgent = 87/100 CRITICAL) | ✅ |
-| P03 | Deterministic policy engine (JSON conditions, no `eval`) | ✅ |
-| P04 | Execution state machine + safe (mock) tool layer + idempotency | ✅ |
-| P05 | Durable human approval workflow (two-stage $650 refund) | ✅ |
-| P06 | Discovery → auto risk/policy → quarantine, privileged reactivation | ✅ |
-| P07 | GovernanceAgent (Gemini via GenAI SDK) explains, never overrides | ✅ |
-| P08 | Dependency graph (React Flow) + deterministic blast radius | ✅ |
-| P09 | Append-only audit trail + observability + trace reconstruction | ✅ |
-| P10 | Security scanner + Model Armor adapter (prompt injection / PII) | ✅ |
-| P11 | Version intelligence + self-evolving governance (v17 rejected) | ✅ |
-| P12 | Firestore + Pub/Sub adapters, Cloud Run + Terraform deploy | ✅ |
-| P13 | Gemini Enterprise adapters + truthful integration status | ✅ |
-| P14 | Demo hardening, guided demo & submission readiness | ⬜ |
+Highlights: deterministic risk boundaries, policy engine (no `eval`), state machine +
+idempotency, two-stage approval, discovery→quarantine, GovernanceAgent no-override,
+graph/blast-radius, audit/observability, security scanner, self-evolving governance,
+event bus, integration status, and a full **end-to-end demo-flow** test.
 
-**What works today — the full governed arc runs end to end:** discover the rogue
-CustomerRefundAgent → it auto-assesses to 87/100 CRITICAL → policy quarantines it →
-a privileged operator reactivates it → a $650 refund runs through the state machine →
-pauses for two-stage human approval → resumes and executes **exactly once**, with an
-append-only audit trail throughout. Browse the 127-agent fleet with live risk
-severities, view/evaluate governance policies, and inspect executions and approvals.
-No LLM sits in the authorization path — governance is deterministic; Gemini (P07) will
-explain, never override.
+## Security model
 
-Built for Google All Things Agentic Hackathon 2026.
+Deterministic authority + human-in-the-loop + append-only audit. Full threat model:
+[`docs/security/threat-model.md`](docs/security/threat-model.md). Highlights: no LLM in
+the authorization path; constrained agent tools; idempotent financial actions; role
+authority enforced by the backend; quarantine kill switch; secrets in Secret Manager.
+
+## Known limitations
+
+- Live Google integrations (Registry/Runtime/Memory/Gateway, Model Armor, live Gemini)
+  are adapter **seams** with truthful status — bound to real services when configured.
+- The security scanner is a demo pattern set, not production DLP.
+- Firestore/Pub/Sub/Cloud Trace live paths are exercised via config + the `[gcp]`/`[otel]`
+  extras (tested locally against the Firestore emulator).
+
+## Future roadmap
+
+- Bind the adapter seams to live Google Agent Registry / Runtime / Memory Bank / Gateway.
+- Multi-turn ADK tool-calling for the GovernanceAgent (keeping the no-override guarantee).
+- Console authentication + per-tenant isolation; retention/archival for the audit trail.
+- Live evaluators that derive performance/compliance from execution history.
+
+---
+
+Built for **Google All Things Agentic Hackathon 2026**.
