@@ -88,3 +88,10 @@ class ExecutionStatus(str, Enum):
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+
+
+class ApprovalStatus(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"

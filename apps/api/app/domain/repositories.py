@@ -16,6 +16,7 @@ from app.domain.models import (
     Agent,
     AgentDependency,
     AgentVersion,
+    ApprovalRequest,
     Execution,
     Organization,
     Policy,
@@ -147,6 +148,23 @@ class ToolCallRepository(ABC):
 
     @abstractmethod
     def find_by_idempotency_key(self, key: str) -> ToolCall | None: ...
+
+
+class ApprovalRepository(ABC):
+    @abstractmethod
+    def add(self, approval: ApprovalRequest) -> None: ...
+
+    @abstractmethod
+    def get(self, approval_id: str) -> ApprovalRequest | None: ...
+
+    @abstractmethod
+    def update(self, approval: ApprovalRequest) -> None: ...
+
+    @abstractmethod
+    def list(self, status: str | None = None) -> Sequence[ApprovalRequest]: ...
+
+    @abstractmethod
+    def list_for_execution(self, execution_id: str) -> Sequence[ApprovalRequest]: ...
 
 
 class RiskAssessmentRepository(ABC):

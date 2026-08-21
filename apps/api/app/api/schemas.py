@@ -8,7 +8,15 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.domain.enums import PolicyAction
-from app.domain.models import Agent, AgentDependency, AgentVersion, Execution, ToolCall, User
+from app.domain.models import (
+    Agent,
+    AgentDependency,
+    AgentVersion,
+    ApprovalRequest,
+    Execution,
+    ToolCall,
+    User,
+)
 
 
 class HealthResponse(BaseModel):
@@ -111,3 +119,11 @@ class ExecutionListResponse(BaseModel):
 class ExecutionDetailResponse(BaseModel):
     execution: Execution
     tool_calls: list[ToolCall]
+
+
+class ApprovalListResponse(BaseModel):
+    items: list[ApprovalRequest]
+
+
+class ApprovalActionRequest(BaseModel):
+    actor_user_id: str = Field(description="Persona acting; the backend validates its role.")

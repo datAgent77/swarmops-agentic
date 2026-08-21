@@ -9,6 +9,7 @@ from app.infrastructure.db import Database
 from app.infrastructure.repositories_sqlite import (
     SqliteAgentRepository,
     SqliteAgentVersionRepository,
+    SqliteApprovalRepository,
     SqliteDependencyRepository,
     SqliteExecutionRepository,
     SqliteOrganizationRepository,
@@ -33,6 +34,7 @@ class RepositoryContainer:
         self.risk_assessments = SqliteRiskAssessmentRepository(self.db)
         self.executions = SqliteExecutionRepository(self.db)
         self.tool_calls = SqliteToolCallRepository(self.db)
+        self.approvals = SqliteApprovalRepository(self.db)
 
     def seed_if_empty(self) -> None:
         if self.db.is_empty():

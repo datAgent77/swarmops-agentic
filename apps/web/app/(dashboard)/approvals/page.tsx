@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { ApprovalQueue } from "@/components/approvals/approval-queue";
 
 export default function ApprovalsPage() {
-  return (
-    <PagePlaceholder
-      title="Approvals"
-      description="Durable human-in-the-loop approval queue with role enforcement."
-      phase="P05"
-    />
-  );
+  return <ApprovalQueue />;
 }

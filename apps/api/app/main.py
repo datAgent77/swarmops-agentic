@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.routes import (
     agents,
+    approvals,
     demo,
     executions,
     health,
@@ -55,6 +56,7 @@ def create_app(container: RepositoryContainer | None = None) -> FastAPI:
     app.include_router(risk.router)
     app.include_router(policies.router)
     app.include_router(executions.router)
+    app.include_router(approvals.router)
     app.include_router(users.router)
     app.include_router(demo.router)
     return app

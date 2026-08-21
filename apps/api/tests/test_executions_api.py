@@ -6,12 +6,14 @@ from fastapi.testclient import TestClient
 
 
 def _refund_execution(client: TestClient, key: str | None) -> dict:
-    tc = {"tool": "execute_refund", "arguments": {"amount": 650}}
+    # $50 is under the approval threshold (Small Refund → ALLOW), so it runs
+    # immediately. The $500+ governed flow is covered in test_approvals_api.
+    tc: dict = {"tool": "execute_refund", "arguments": {"amount": 50}}
     if key is not None:
         tc["idempotency_key"] = key
     return client.post("/api/v1/executions", json={
         "agent_id": "agent-customer-refund",
-        "input_summary": "Refund order #123 for $650",
+        "input_summary": "Refund order #123 for $50",
         "tool_calls": [tc],
     }).json()
 

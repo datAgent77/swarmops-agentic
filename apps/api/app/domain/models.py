@@ -13,6 +13,7 @@ from pydantic import BaseModel, computed_field
 
 from app.domain.enums import (
     AgentStatus,
+    ApprovalStatus,
     AutonomyLevel,
     DependencyTargetType,
     ExecutionStatus,
@@ -135,6 +136,8 @@ class Execution(BaseModel):
     duration_ms: int | None = None
     trace_id: str
     estimated_cost: float = 0.0
+    # Tool calls deferred while the execution waits for approval (run on resume).
+    pending_actions: list[dict[str, Any]] = []
 
 
 class ToolCall(BaseModel):
@@ -148,6 +151,20 @@ class ToolCall(BaseModel):
     completed_at: datetime
     duration_ms: int
     idempotency_key: str | None = None
+
+
+class ApprovalRequest(BaseModel):
+    id: str
+    execution_id: str
+    policy_id: str | None
+    requested_from_role: Role
+    sequence: int
+    status: ApprovalStatus
+    reason: str
+    context: dict[str, Any]
+    created_at: datetime
+    resolved_at: datetime | None = None
+    resolved_by: str | None = None
 
 
 class Policy(BaseModel):

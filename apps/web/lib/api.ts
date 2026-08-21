@@ -130,6 +130,22 @@ export type ExecutionDetail = {
   tool_calls: ToolCall[];
 };
 
+export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+
+export type ApprovalRequest = {
+  id: string;
+  execution_id: string;
+  policy_id: string | null;
+  requested_from_role: string;
+  sequence: number;
+  status: ApprovalStatus;
+  reason: string;
+  context: Record<string, unknown>;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+};
+
 export type PolicyAction =
   | "ALLOW"
   | "DENY"
@@ -209,6 +225,31 @@ export function fetchExecutions() {
 export function fetchExecution(id: string) {
   return getJSON<ExecutionDetail>(`/api/v1/executions/${id}`);
 }
+
+export type Persona = { id: string; name: string; email: string; role: string };
+
+export function fetchUsers() {
+  return getJSON<{ items: Persona[] }>("/api/v1/users");
+}
+
+export function fetchApprovals(status?: ApprovalStatus) {
+  const qs = status ? `?status=${status}` : "";
+  return getJSON<{ items: ApprovalRequest[] }>(`/api/v1/approvals${qs}`);
+}
+
+async function approvalAction(id: string, action: "approve" | "reject", actorUserId: string) {
+  const res = await fetch(`${API_URL}/api/v1/approvals/${id}/${action}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ actor_user_id: actorUserId }),
+  });
+  if (res.status === 403) throw new Error("This persona does not hold the required role.");
+  if (!res.ok) throw new Error(`${action} → HTTP ${res.status}`);
+  return res.json() as Promise<ApprovalRequest>;
+}
+
+export const approveRequest = (id: string, actor: string) => approvalAction(id, "approve", actor);
+export const rejectRequest = (id: string, actor: string) => approvalAction(id, "reject", actor);
 
 export async function fetchRisk(agentId: string): Promise<RiskAssessment | null> {
   const res = await fetch(`${API_URL}/api/v1/agents/${agentId}/risk`, { cache: "no-store" });

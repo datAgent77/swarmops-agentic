@@ -94,7 +94,22 @@ CREATE TABLE IF NOT EXISTS executions (
     completed_at      TEXT,
     duration_ms       INTEGER,
     trace_id          TEXT NOT NULL,
-    estimated_cost    REAL NOT NULL
+    estimated_cost    REAL NOT NULL,
+    pending_actions   TEXT NOT NULL DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS approvals (
+    id                  TEXT PRIMARY KEY,
+    execution_id        TEXT NOT NULL,
+    policy_id           TEXT,
+    requested_from_role TEXT NOT NULL,
+    sequence            INTEGER NOT NULL,
+    status              TEXT NOT NULL,
+    reason              TEXT NOT NULL,
+    context             TEXT NOT NULL,
+    created_at          TEXT NOT NULL,
+    resolved_at         TEXT,
+    resolved_by         TEXT
 );
 
 CREATE TABLE IF NOT EXISTS tool_calls (
@@ -151,10 +166,13 @@ CREATE INDEX IF NOT EXISTS idx_risk_agent ON risk_assessments(agent_id);
 CREATE INDEX IF NOT EXISTS idx_policies_priority ON policies(priority);
 CREATE INDEX IF NOT EXISTS idx_toolcalls_exec ON tool_calls(execution_id);
 CREATE INDEX IF NOT EXISTS idx_toolcalls_idem ON tool_calls(idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_approvals_exec ON approvals(execution_id);
+CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
 """
 
 _ALL_TABLES = (
     "tool_calls",
+    "approvals",
     "executions",
     "risk_assessments",
     "policies",

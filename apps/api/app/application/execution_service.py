@@ -16,9 +16,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from app.domain.enums import AgentStatus, ExecutionStatus
+from app.domain.enums import AgentStatus, ExecutionStatus, PolicyAction
 from app.domain.execution_state import assert_transition
 from app.domain.models import Execution, ToolCall
+from app.domain.policy_engine import PolicyDecision, evaluate_policies
 from app.infrastructure.container import RepositoryContainer
 from app.infrastructure.tool_layer import KNOWN_TOOLS, ToolNotFound, is_state_changing, run_tool
 
@@ -86,6 +87,20 @@ def _run_one(container: RepositoryContainer, execution_id: str, req: ToolCallReq
     return call, result
 
 
+def _governance_context(tool_calls: list[ToolCallRequest]) -> dict[str, Any]:
+    """Build the policy-evaluation context from the requested tool calls.
+
+    Refund amounts surface as ``refund`` so the refund policies apply; other
+    arguments are merged through as-is.
+    """
+    context: dict[str, Any] = {}
+    for tc in tool_calls:
+        context.update(tc.arguments)
+        if tc.tool == "execute_refund" and "amount" in tc.arguments:
+            context["refund"] = tc.arguments["amount"]
+    return context
+
+
 def start_execution(
     container: RepositoryContainer,
     agent_id: str,
@@ -112,16 +127,64 @@ def start_execution(
         estimated_cost=round(0.001 + 0.0005 * len(tool_calls), 4),
     )
     container.executions.add(execution)
-
     execution.status = assert_transition(execution.status, ExecutionStatus.RUNNING)
     container.executions.update(execution)
 
+    # Deterministic governance gate.
+    decision = evaluate_policies(list(container.policies.list()), _governance_context(tool_calls))
+
+    if decision.action in (PolicyAction.DENY, PolicyAction.QUARANTINE):
+        execution.status = assert_transition(execution.status, ExecutionStatus.BLOCKED)
+        execution.output_summary = f"blocked by policy: {decision.policy_name} ({decision.action.value})"
+        _finalize(container, execution, started)
+        return execution
+
+    if decision.action is PolicyAction.REQUIRE_APPROVAL:
+        _open_approvals(container, execution, tool_calls, decision)
+        execution.status = assert_transition(execution.status, ExecutionStatus.WAITING_APPROVAL)
+        execution.pending_actions = [
+            {"tool": tc.tool, "arguments": tc.arguments, "idempotency_key": tc.idempotency_key}
+            for tc in tool_calls
+        ]
+        execution.output_summary = f"waiting for approval: {decision.policy_name}"
+        container.executions.update(execution)
+        return execution
+
+    # ALLOW / LOG_ONLY / REDACT / no match → run now.
+    return _run_and_complete(container, execution, tool_calls, started)
+
+
+def _open_approvals(
+    container: RepositoryContainer,
+    execution: Execution,
+    tool_calls: list[ToolCallRequest],
+    decision: PolicyDecision,
+) -> None:
+    from app.domain.enums import ApprovalStatus, Role
+    from app.domain.models import ApprovalRequest
+
+    context = _governance_context(tool_calls)
+    for i, role in enumerate(decision.required_roles):
+        container.approvals.add(ApprovalRequest(
+            id=f"appr-{uuid.uuid4().hex[:12]}", execution_id=execution.id,
+            policy_id=decision.policy_id, requested_from_role=Role(role), sequence=i + 1,
+            status=ApprovalStatus.PENDING, reason=decision.reason, context=context,
+            created_at=_now(),
+        ))
+
+
+def _run_and_complete(
+    container: RepositoryContainer,
+    execution: Execution,
+    tool_calls: list[ToolCallRequest],
+    started: datetime,
+) -> Execution:
     outputs: list[dict] = []
     try:
         for req in tool_calls:
             _, result = _run_one(container, execution.id, req)
             outputs.append(result)
-    except ToolNotFound as exc:  # defensive; validated above
+    except ToolNotFound as exc:  # defensive; validated earlier
         execution.status = assert_transition(execution.status, ExecutionStatus.FAILED)
         execution.output_summary = f"tool error: {exc}"
         _finalize(container, execution, started)
@@ -129,7 +192,38 @@ def start_execution(
 
     execution.status = assert_transition(execution.status, ExecutionStatus.COMPLETED)
     execution.output_summary = json.dumps(outputs[-1]) if outputs else "no tool calls"
+    execution.pending_actions = []
     _finalize(container, execution, started)
+    return execution
+
+
+def resume_execution(container: RepositoryContainer, execution: Execution) -> Execution:
+    """Resume a WAITING_APPROVAL execution once all approvals are granted.
+
+    Guarded so the deferred actions run exactly once: if the execution is no longer
+    WAITING_APPROVAL, this is a no-op.
+    """
+    if execution.status is not ExecutionStatus.WAITING_APPROVAL:
+        return execution
+    execution.status = assert_transition(execution.status, ExecutionStatus.RUNNING)
+    container.executions.update(execution)
+    requests = [
+        ToolCallRequest(tool=a["tool"], arguments=a.get("arguments", {}),
+                        idempotency_key=a.get("idempotency_key"))
+        for a in execution.pending_actions
+    ]
+    started = execution.started_at or _now()
+    return _run_and_complete(container, execution, requests, started)
+
+
+def block_execution(container: RepositoryContainer, execution: Execution, reason: str) -> Execution:
+    """Terminally block a WAITING_APPROVAL execution (e.g. an approval was rejected)."""
+    if execution.status is not ExecutionStatus.WAITING_APPROVAL:
+        return execution
+    execution.status = assert_transition(execution.status, ExecutionStatus.BLOCKED)
+    execution.output_summary = reason
+    execution.pending_actions = []
+    _finalize(container, execution, execution.started_at or _now())
     return execution
 
 

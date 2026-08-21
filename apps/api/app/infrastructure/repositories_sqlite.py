@@ -12,6 +12,7 @@ from app.domain.models import (
     Agent,
     AgentDependency,
     AgentVersion,
+    ApprovalRequest,
     Execution,
     Organization,
     Policy,
@@ -24,6 +25,7 @@ from app.domain.repositories import (
     AgentQuery,
     AgentRepository,
     AgentVersionRepository,
+    ApprovalRepository,
     DependencyRepository,
     ExecutionRepository,
     OrganizationRepository,
@@ -313,8 +315,13 @@ class SqliteRiskAssessmentRepository(_Base, RiskAssessmentRepository):
 class SqliteExecutionRepository(_Base, ExecutionRepository):
     _COLUMNS = (
         "id, agent_id, agent_version_id, status, input_summary, output_summary, risk_context, "
-        "started_at, completed_at, duration_ms, trace_id, estimated_cost"
+        "started_at, completed_at, duration_ms, trace_id, estimated_cost, pending_actions"
     )
+
+    def _to_model(self, row: sqlite3.Row) -> Execution:
+        data = dict(row)
+        data["pending_actions"] = json.loads(data.get("pending_actions") or "[]")
+        return Execution.model_validate(data)
 
     def _params(self, e: Execution) -> tuple[Any, ...]:
         return (
@@ -322,12 +329,12 @@ class SqliteExecutionRepository(_Base, ExecutionRepository):
             e.output_summary, e.risk_context,
             e.started_at.isoformat() if e.started_at else None,
             e.completed_at.isoformat() if e.completed_at else None,
-            e.duration_ms, e.trace_id, e.estimated_cost,
+            e.duration_ms, e.trace_id, e.estimated_cost, _dumps(e.pending_actions),
         )
 
     def add(self, execution: Execution) -> None:
         self._write(
-            f"INSERT OR REPLACE INTO executions ({self._COLUMNS}) VALUES ({','.join('?' * 12)})",
+            f"INSERT OR REPLACE INTO executions ({self._COLUMNS}) VALUES ({','.join('?' * 13)})",
             self._params(execution),
         )
 
@@ -336,7 +343,7 @@ class SqliteExecutionRepository(_Base, ExecutionRepository):
 
     def get(self, execution_id: str) -> Execution | None:
         row = self._c.execute("SELECT * FROM executions WHERE id=?", (execution_id,)).fetchone()
-        return Execution.model_validate(dict(row)) if row else None
+        return self._to_model(row) if row else None
 
     def list(self, limit: int | None = None) -> Sequence[Execution]:
         sql = "SELECT * FROM executions ORDER BY rowid DESC"
@@ -345,7 +352,7 @@ class SqliteExecutionRepository(_Base, ExecutionRepository):
             sql += " LIMIT ?"
             params = (limit,)
         rows = self._c.execute(sql, params).fetchall()
-        return [Execution.model_validate(dict(r)) for r in rows]
+        return [self._to_model(r) for r in rows]
 
 
 class SqliteToolCallRepository(_Base, ToolCallRepository):
@@ -374,6 +381,50 @@ class SqliteToolCallRepository(_Base, ToolCallRepository):
         return ToolCall.model_validate(dict(row)) if row else None
 
 
+class SqliteApprovalRepository(_Base, ApprovalRepository):
+    _COLUMNS = (
+        "id, execution_id, policy_id, requested_from_role, sequence, status, reason, context, "
+        "created_at, resolved_at, resolved_by"
+    )
+
+    def _to_model(self, row: sqlite3.Row) -> ApprovalRequest:
+        data = dict(row)
+        data["context"] = json.loads(data["context"])
+        return ApprovalRequest.model_validate(data)
+
+    def add(self, a: ApprovalRequest) -> None:
+        self._write(
+            f"INSERT OR REPLACE INTO approvals ({self._COLUMNS}) VALUES ({','.join('?' * 11)})",
+            (
+                a.id, a.execution_id, a.policy_id, a.requested_from_role.value, a.sequence,
+                a.status.value, a.reason, _dumps(a.context), a.created_at.isoformat(),
+                a.resolved_at.isoformat() if a.resolved_at else None, a.resolved_by,
+            ),
+        )
+
+    def update(self, approval: ApprovalRequest) -> None:
+        self.add(approval)
+
+    def get(self, approval_id: str) -> ApprovalRequest | None:
+        row = self._c.execute("SELECT * FROM approvals WHERE id=?", (approval_id,)).fetchone()
+        return self._to_model(row) if row else None
+
+    def list(self, status: str | None = None) -> Sequence[ApprovalRequest]:
+        if status:
+            rows = self._c.execute(
+                "SELECT * FROM approvals WHERE status=? ORDER BY rowid ASC", (status,)
+            ).fetchall()
+        else:
+            rows = self._c.execute("SELECT * FROM approvals ORDER BY rowid ASC").fetchall()
+        return [self._to_model(r) for r in rows]
+
+    def list_for_execution(self, execution_id: str) -> Sequence[ApprovalRequest]:
+        rows = self._c.execute(
+            "SELECT * FROM approvals WHERE execution_id=? ORDER BY sequence ASC", (execution_id,)
+        ).fetchall()
+        return [self._to_model(r) for r in rows]
+
+
 __all__ = [
     "severity_from_score",
     "SqliteOrganizationRepository",
@@ -386,4 +437,5 @@ __all__ = [
     "SqliteRiskAssessmentRepository",
     "SqliteExecutionRepository",
     "SqliteToolCallRepository",
+    "SqliteApprovalRepository",
 ]

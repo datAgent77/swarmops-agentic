@@ -35,7 +35,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P02 | Deterministic Risk Engine | ✅ complete |
 | P03 | Policy Engine & Governance Rules | ✅ complete |
 | P04 | Execution State Machine & Safe Tool Layer | ✅ complete |
-| P05 | Human Approval Workflow | ⬜ pending |
+| P05 | Human Approval Workflow | ✅ complete |
 | P06 | Quarantine, Discovery & Governance Lifecycle | ⬜ pending |
 | P07 | Google ADK + Gemini Governance Agent | ⬜ pending |
 | P08 | Agent Dependency Graph & Blast Radius | ⬜ pending |
@@ -149,3 +149,26 @@ repository state — **preserve working functionality; do not rewrite from scrat
 
 > Policy-gated approvals (RUNNING→WAITING_APPROVAL and back) arrive in P05; the state
 > machine and the WAITING_APPROVAL state are already in place.
+
+## P05 — delivered
+
+- Executions are now **governed**: `POST /executions` evaluates policy on the tool-call
+  context. ALLOW runs immediately; DENY/QUARANTINE → BLOCKED; REQUIRE_APPROVAL →
+  WAITING_APPROVAL with the tool calls deferred (`pending_actions`).
+- ApprovalRequest model + repository + table (PENDING/APPROVED/REJECTED/EXPIRED). One
+  request per required role, sequenced. Durable (SQLite) → survives restart.
+- The **$650 refund flow**: RUNNING → policy (Large Refund) → WAITING_APPROVAL →
+  Business Approver → Finance Approver → RUNNING → demo refund → COMPLETED.
+- **Role enforcement is server-side**: the acting persona must actually hold the
+  required role (looked up in the users table); the UI switcher is not the authority.
+- **Exactly-once + idempotent**: the deferred refund runs once when all approvals land;
+  a rejection blocks the execution and expires remaining approvals; re-approving a
+  resolved request is a safe no-op.
+- API: `GET /api/v1/approvals`, `GET /api/v1/approvals/{id}`,
+  `POST /api/v1/approvals/{id}/approve|reject` (body: `actor_user_id`).
+- Frontend: Approval Queue — pending items with amount/role/step, an "acting as" persona
+  switcher, and Approve/Reject wired to the backend (403 surfaced on wrong role).
+- Tests: 53 backend total (+6): $650 waits, business-alone doesn't execute, both approvals
+  complete + execute once, wrong role 403, rejection blocks, double approval safe.
+  P04 refund API tests moved to $50 (ALLOW) to keep testing the immediate path.
+  ruff + mypy + web build green.
