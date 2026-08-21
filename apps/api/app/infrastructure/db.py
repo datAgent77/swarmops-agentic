@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS agents (
     model_provider   TEXT NOT NULL,
     model_name       TEXT NOT NULL,
     created_at       TEXT NOT NULL,
-    updated_at       TEXT NOT NULL
+    updated_at       TEXT NOT NULL,
+    quarantine_reason TEXT
 );
 
 CREATE TABLE IF NOT EXISTS agent_versions (
@@ -140,6 +141,21 @@ CREATE TABLE IF NOT EXISTS policies (
     updated_at   TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS audit_events (
+    id               TEXT PRIMARY KEY,
+    organization_id  TEXT NOT NULL,
+    actor_type       TEXT NOT NULL,
+    actor_id         TEXT,
+    action           TEXT NOT NULL,
+    resource_type    TEXT NOT NULL,
+    resource_id      TEXT NOT NULL,
+    decision         TEXT,
+    reason           TEXT,
+    metadata         TEXT NOT NULL,
+    trace_id         TEXT,
+    timestamp        TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS risk_assessments (
     id                 TEXT PRIMARY KEY,
     agent_id           TEXT NOT NULL,
@@ -168,12 +184,14 @@ CREATE INDEX IF NOT EXISTS idx_toolcalls_exec ON tool_calls(execution_id);
 CREATE INDEX IF NOT EXISTS idx_toolcalls_idem ON tool_calls(idempotency_key);
 CREATE INDEX IF NOT EXISTS idx_approvals_exec ON approvals(execution_id);
 CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
+CREATE INDEX IF NOT EXISTS idx_audit_resource ON audit_events(resource_type, resource_id);
 """
 
 _ALL_TABLES = (
     "tool_calls",
     "approvals",
     "executions",
+    "audit_events",
     "risk_assessments",
     "policies",
     "agent_dependencies",

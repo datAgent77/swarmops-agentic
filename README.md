@@ -117,7 +117,7 @@ No secrets are committed; `.env` is gitignored.
 ## Status
 
 Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
-**Complete through P05** — 53 backend tests green; ruff + mypy clean; web build green.
+**Complete through P06** — 59 backend tests green; ruff + mypy clean; web build green.
 
 | Phase | Capability | Done |
 |-------|------------|:----:|
@@ -127,13 +127,16 @@ Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
 | P03 | Deterministic policy engine (JSON conditions, no `eval`) | ✅ |
 | P04 | Execution state machine + safe (mock) tool layer + idempotency | ✅ |
 | P05 | Durable human approval workflow (two-stage $650 refund) | ✅ |
-| P06–P14 | Discovery/quarantine, ADK+Gemini, graph, audit, security, cloud | ⬜ |
+| P06 | Discovery → auto risk/policy → quarantine, privileged reactivation | ✅ |
+| P07–P14 | ADK+Gemini, graph, audit/OTel, security, self-evolving, cloud | ⬜ |
 
-**What works today:** browse the 127-agent fleet with live risk severities; run the
-deterministic risk engine per agent; view and evaluate governance policies; start
-governed executions through the state machine (quarantined agents are blocked;
-state-changing tools are idempotent); and drive a full two-stage human approval on a
-$650 refund that resumes and executes **exactly once**. No LLM sits in the
-authorization path — governance is deterministic; Gemini (P07) will explain, never override.
+**What works today — the full governed arc runs end to end:** discover the rogue
+CustomerRefundAgent → it auto-assesses to 87/100 CRITICAL → policy quarantines it →
+a privileged operator reactivates it → a $650 refund runs through the state machine →
+pauses for two-stage human approval → resumes and executes **exactly once**, with an
+append-only audit trail throughout. Browse the 127-agent fleet with live risk
+severities, view/evaluate governance policies, and inspect executions and approvals.
+No LLM sits in the authorization path — governance is deterministic; Gemini (P07) will
+explain, never override.
 
 Built for Google All Things Agentic Hackathon 2026.

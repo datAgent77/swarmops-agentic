@@ -17,6 +17,7 @@ from app.domain.models import (
     AgentDependency,
     AgentVersion,
     ApprovalRequest,
+    AuditEvent,
     Execution,
     Organization,
     Policy,
@@ -165,6 +166,17 @@ class ApprovalRepository(ABC):
 
     @abstractmethod
     def list_for_execution(self, execution_id: str) -> Sequence[ApprovalRequest]: ...
+
+
+class AuditRepository(ABC):
+    @abstractmethod
+    def add(self, event: AuditEvent) -> None: ...
+
+    @abstractmethod
+    def list(self, limit: int | None = None) -> Sequence[AuditEvent]: ...
+
+    @abstractmethod
+    def list_for_resource(self, resource_type: str, resource_id: str) -> Sequence[AuditEvent]: ...
 
 
 class RiskAssessmentRepository(ABC):

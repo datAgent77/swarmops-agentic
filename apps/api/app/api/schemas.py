@@ -127,3 +127,27 @@ class ApprovalListResponse(BaseModel):
 
 class ApprovalActionRequest(BaseModel):
     actor_user_id: str = Field(description="Persona acting; the backend validates its role.")
+
+
+class DiscoveryResultOut(BaseModel):
+    agent_id: str
+    name: str
+    from_status: str
+    to_status: str
+    risk_score: int
+    quarantined: bool
+    reason: str
+    already_processed: bool
+
+
+class DiscoverResponse(BaseModel):
+    discovered: list[DiscoveryResultOut]
+
+
+class QuarantineRequest(BaseModel):
+    actor_user_id: str
+    reason: str = "manually quarantined"
+
+
+class ActivateRequest(BaseModel):
+    actor_user_id: str

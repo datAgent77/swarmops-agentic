@@ -169,6 +169,10 @@ def _generated_agents() -> list[Agent]:
         owner = ["user-dana-dev", "user-blair-business", "user-morgan-finance",
                  "user-sam-security", "user-alex-admin"][idx % 5]
         created = BASE + timedelta(days=idx)
+        quarantine_reason = (
+            "High-risk agent held under governance (seeded baseline)."
+            if status is AgentStatus.QUARANTINED else None
+        )
         agents.append(Agent(
             id=f"agent-{idx + 1:03d}", organization_id=ORG_ID, name=name,
             description=f"{prefix} automation for the {dept} department.", owner_id=owner,
@@ -176,6 +180,7 @@ def _generated_agents() -> list[Agent]:
             current_version=f"v{1 + idx % 5}", runtime=RUNTIMES[idx % len(RUNTIMES)],
             framework=FRAMEWORKS[idx % len(FRAMEWORKS)], model_provider=provider,
             model_name=model, created_at=created, updated_at=created + timedelta(days=1),
+            quarantine_reason=quarantine_reason,
         ))
     return agents
 

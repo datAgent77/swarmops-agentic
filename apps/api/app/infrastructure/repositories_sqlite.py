@@ -13,6 +13,7 @@ from app.domain.models import (
     AgentDependency,
     AgentVersion,
     ApprovalRequest,
+    AuditEvent,
     Execution,
     Organization,
     Policy,
@@ -26,6 +27,7 @@ from app.domain.repositories import (
     AgentRepository,
     AgentVersionRepository,
     ApprovalRepository,
+    AuditRepository,
     DependencyRepository,
     ExecutionRepository,
     OrganizationRepository,
@@ -105,7 +107,8 @@ class SqliteUserRepository(_Base, UserRepository):
 
 _AGENT_COLUMNS = (
     "id, organization_id, name, description, owner_id, department, status, autonomy_level, "
-    "risk_score, current_version, runtime, framework, model_provider, model_name, created_at, updated_at"
+    "risk_score, current_version, runtime, framework, model_provider, model_name, created_at, "
+    "updated_at, quarantine_reason"
 )
 
 
@@ -115,12 +118,12 @@ class SqliteAgentRepository(_Base, AgentRepository):
             a.id, a.organization_id, a.name, a.description, a.owner_id, a.department,
             a.status.value, a.autonomy_level.value, a.risk_score, a.current_version,
             a.runtime, a.framework, a.model_provider, a.model_name,
-            a.created_at.isoformat(), a.updated_at.isoformat(),
+            a.created_at.isoformat(), a.updated_at.isoformat(), a.quarantine_reason,
         )
 
     def add(self, agent: Agent) -> None:
         self._write(
-            f"INSERT OR REPLACE INTO agents ({_AGENT_COLUMNS}) VALUES ({','.join('?' * 16)})",
+            f"INSERT OR REPLACE INTO agents ({_AGENT_COLUMNS}) VALUES ({','.join('?' * 17)})",
             self._params(agent),
         )
 
@@ -425,6 +428,44 @@ class SqliteApprovalRepository(_Base, ApprovalRepository):
         return [self._to_model(r) for r in rows]
 
 
+class SqliteAuditRepository(_Base, AuditRepository):
+    _COLUMNS = (
+        "id, organization_id, actor_type, actor_id, action, resource_type, resource_id, "
+        "decision, reason, metadata, trace_id, timestamp"
+    )
+
+    def _to_model(self, row: sqlite3.Row) -> AuditEvent:
+        data = dict(row)
+        data["metadata"] = json.loads(data["metadata"])
+        return AuditEvent.model_validate(data)
+
+    def add(self, e: AuditEvent) -> None:
+        self._write(
+            f"INSERT OR REPLACE INTO audit_events ({self._COLUMNS}) VALUES ({','.join('?' * 12)})",
+            (
+                e.id, e.organization_id, e.actor_type.value, e.actor_id, e.action,
+                e.resource_type, e.resource_id, e.decision, e.reason, _dumps(e.metadata),
+                e.trace_id, e.timestamp.isoformat(),
+            ),
+        )
+
+    def list(self, limit: int | None = None) -> Sequence[AuditEvent]:
+        sql = "SELECT * FROM audit_events ORDER BY rowid DESC"
+        params: tuple[Any, ...] = ()
+        if limit is not None:
+            sql += " LIMIT ?"
+            params = (limit,)
+        rows = self._c.execute(sql, params).fetchall()
+        return [self._to_model(r) for r in rows]
+
+    def list_for_resource(self, resource_type: str, resource_id: str) -> Sequence[AuditEvent]:
+        rows = self._c.execute(
+            "SELECT * FROM audit_events WHERE resource_type=? AND resource_id=? ORDER BY rowid ASC",
+            (resource_type, resource_id),
+        ).fetchall()
+        return [self._to_model(r) for r in rows]
+
+
 __all__ = [
     "severity_from_score",
     "SqliteOrganizationRepository",
@@ -438,4 +479,5 @@ __all__ = [
     "SqliteExecutionRepository",
     "SqliteToolCallRepository",
     "SqliteApprovalRepository",
+    "SqliteAuditRepository",
 ]

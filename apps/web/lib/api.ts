@@ -30,7 +30,19 @@ export type Agent = {
   model_name: string;
   created_at: string;
   updated_at: string;
+  quarantine_reason: string | null;
   severity: Severity;
+};
+
+export type DiscoveryResult = {
+  agent_id: string;
+  name: string;
+  from_status: string;
+  to_status: string;
+  risk_score: number;
+  quarantined: boolean;
+  reason: string;
+  already_processed: boolean;
 };
 
 export type AgentVersion = {
@@ -216,6 +228,23 @@ export function fetchAgent(id: string) {
 
 export function fetchPolicies() {
   return getJSON<Policy[]>("/api/v1/policies");
+}
+
+export async function discoverAgents() {
+  const res = await fetch(`${API_URL}/api/v1/agents/discover`, { method: "POST" });
+  if (!res.ok) throw new Error(`discover → HTTP ${res.status}`);
+  return (await res.json()) as { discovered: DiscoveryResult[] };
+}
+
+export async function activateAgent(agentId: string, actorUserId: string) {
+  const res = await fetch(`${API_URL}/api/v1/agents/${agentId}/activate`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ actor_user_id: actorUserId }),
+  });
+  if (res.status === 403) throw new Error("This persona is not authorized to reactivate agents.");
+  if (!res.ok) throw new Error(`activate → HTTP ${res.status}`);
+  return (await res.json()) as Agent;
 }
 
 export function fetchExecutions() {

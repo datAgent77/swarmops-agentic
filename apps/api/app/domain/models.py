@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, computed_field
 from app.domain.enums import (
     AgentStatus,
     ApprovalStatus,
+    AuditActorType,
     AutonomyLevel,
     DependencyTargetType,
     ExecutionStatus,
@@ -60,6 +61,8 @@ class Agent(BaseModel):
     model_name: str
     created_at: datetime
     updated_at: datetime
+    # Set when the agent is QUARANTINED; cleared on reactivation.
+    quarantine_reason: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -165,6 +168,21 @@ class ApprovalRequest(BaseModel):
     created_at: datetime
     resolved_at: datetime | None = None
     resolved_by: str | None = None
+
+
+class AuditEvent(BaseModel):
+    id: str
+    organization_id: str
+    actor_type: AuditActorType
+    actor_id: str | None = None
+    action: str
+    resource_type: str
+    resource_id: str
+    decision: str | None = None
+    reason: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    trace_id: str | None = None
+    timestamp: datetime
 
 
 class Policy(BaseModel):

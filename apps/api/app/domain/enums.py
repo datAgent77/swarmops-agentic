@@ -95,3 +95,9 @@ class ApprovalStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     EXPIRED = "EXPIRED"
+
+
+class AuditActorType(str, Enum):
+    SYSTEM = "SYSTEM"
+    USER = "USER"
+    AGENT = "AGENT"

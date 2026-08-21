@@ -10,6 +10,7 @@ from app.infrastructure.repositories_sqlite import (
     SqliteAgentRepository,
     SqliteAgentVersionRepository,
     SqliteApprovalRepository,
+    SqliteAuditRepository,
     SqliteDependencyRepository,
     SqliteExecutionRepository,
     SqliteOrganizationRepository,
@@ -35,6 +36,7 @@ class RepositoryContainer:
         self.executions = SqliteExecutionRepository(self.db)
         self.tool_calls = SqliteToolCallRepository(self.db)
         self.approvals = SqliteApprovalRepository(self.db)
+        self.audit_events = SqliteAuditRepository(self.db)
 
     def seed_if_empty(self) -> None:
         if self.db.is_empty():

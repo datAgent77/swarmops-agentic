@@ -36,7 +36,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P03 | Policy Engine & Governance Rules | ✅ complete |
 | P04 | Execution State Machine & Safe Tool Layer | ✅ complete |
 | P05 | Human Approval Workflow | ✅ complete |
-| P06 | Quarantine, Discovery & Governance Lifecycle | ⬜ pending |
+| P06 | Quarantine, Discovery & Governance Lifecycle | ✅ complete |
 | P07 | Google ADK + Gemini Governance Agent | ⬜ pending |
 | P08 | Agent Dependency Graph & Blast Radius | ⬜ pending |
 | P09 | Audit Trail & OpenTelemetry Observability | ⬜ pending |
@@ -182,3 +182,29 @@ approve → resume exactly once`) stays coherent.
   complete + execute once, wrong role 403, rejection blocks, double approval safe.
   P04 refund API tests moved to $50 (ALLOW) to keep testing the immediate path.
   ruff + mypy + web build green.
+
+## P06 — delivered
+
+- Discovery port (`application/discovery.py`) + `DemoDiscoveryProvider`. The seed keeps
+  CustomerRefundAgent benign (ACTIVE, risk 72); **discovery** is what pulls the rogue v2
+  into review — the seed never pre-quarantines it (per the P06 note above).
+- Deterministic lifecycle (`application/lifecycle_service.py`):
+  DISCOVERED → PENDING_REVIEW → risk assessment (→ 87) → policy evaluation (Rogue
+  Financial Agent) → **QUARANTINED**, with a persisted reason. Duplicate discovery is safe.
+- Quarantine behavior: new executions blocked (409); reason persisted + shown in the UI;
+  audit events emitted; only a privileged operator can reactivate.
+- Privileged quarantine/activate (PLATFORM_ADMIN or SECURITY_OFFICER); others get 403.
+- Append-only audit foundation: `AuditEvent` model + repository + table + `record_event`
+  helper. Lifecycle emits agent.discovered / pending_review / risk.assessed /
+  policy.evaluated / agent.quarantined / agent.activated. (Full OTel + query endpoints: P09.)
+- API: `POST /api/v1/agents/discover`, `POST /api/v1/agents/{id}/quarantine`,
+  `POST /api/v1/agents/{id}/activate`.
+- Frontend: "Discover Agents" action on the Agents page (with a result line) and a
+  quarantine banner on agent detail ("Why was this agent quarantined?") with Reactivate.
+- Tests: 59 backend total (+6): discovery quarantines the rogue (87), duplicate-safe,
+  quarantined-cannot-execute, privileged reactivation (403 for non-privileged), manual
+  quarantine privilege, audit events generated. ruff + mypy + web build green.
+
+> The full demo arc now runs end to end:
+> **discover → assess → quarantine → (reactivate under governance) → execute → pause →
+> approve → resume exactly once.**

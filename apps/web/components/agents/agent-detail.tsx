@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, ShieldAlert, ShieldCheck } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SeverityBadge, StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { RiskPanel } from "@/components/agents/risk-panel";
-import { fetchAgent, type AgentDetail as Detail } from "@/lib/api";
+import { activateAgent, fetchAgent, type AgentDetail as Detail } from "@/lib/api";
+
+// The demo reactivation actor is the platform admin persona (privileged).
+const ADMIN_PERSONA = "user-alex-admin";
 
 const TABS = [
   "Overview", "Dependencies", "Versions", "Executions",
@@ -32,12 +36,27 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 export function AgentDetail({ id }: { id: string }) {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activating, setActivating] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAgent(id)
-      .then(setDetail)
-      .catch((e) => setError(String(e)));
+  const load = useCallback(() => {
+    fetchAgent(id).then(setDetail).catch((e) => setError(String(e)));
   }, [id]);
+
+  useEffect(() => load(), [load]);
+
+  const onActivate = async () => {
+    setActivating(true);
+    setActionError(null);
+    try {
+      await activateAgent(id, ADMIN_PERSONA);
+      load();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Activation failed");
+    } finally {
+      setActivating(false);
+    }
+  };
 
   if (error) {
     return <div className="text-sm text-severity-critical">Agent not found or backend unreachable.</div>;
@@ -62,6 +81,27 @@ export function AgentDetail({ id }: { id: string }) {
         </div>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{agent.description}</p>
       </div>
+
+      {agent.status === "QUARANTINED" && (
+        <Card className="border-severity-critical/40 bg-severity-critical/5">
+          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex gap-3">
+              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-severity-critical" />
+              <div>
+                <div className="font-medium">Why was this agent quarantined?</div>
+                <p className="text-sm text-muted-foreground">
+                  {agent.quarantine_reason ?? "Held under governance."} New executions are blocked
+                  until a privileged operator reactivates it.
+                </p>
+                {actionError && <p className="mt-1 text-sm text-severity-critical">{actionError}</p>}
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={onActivate} disabled={activating}>
+              <ShieldCheck className="h-4 w-4" /> Reactivate
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs tabs={TABS}>
         {(active) => {

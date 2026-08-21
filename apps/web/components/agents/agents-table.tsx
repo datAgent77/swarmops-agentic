@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Radar, Search } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { SeverityBadge, StatusBadge } from "@/components/ui/status-badge";
 import {
+  discoverAgents,
   fetchAgents,
   type Agent,
   type AgentFilters,
@@ -45,6 +47,9 @@ export function AgentsTable() {
   const [total, setTotal] = useState(0);
   const [departments, setDepartments] = useState<string[]>([]);
   const [error, setError] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverMsg, setDiscoverMsg] = useState<string | null>(null);
   const owners = useOwners();
 
   // One-time unfiltered load to populate the department dropdown.
@@ -69,9 +74,28 @@ export function AgentsTable() {
     return () => {
       active = false;
     };
-  }, [filters]);
+  }, [filters, reloadToken]);
 
   const update = (patch: AgentFilters) => setFilters((f) => ({ ...f, ...patch }));
+
+  const onDiscover = async () => {
+    setDiscovering(true);
+    setDiscoverMsg(null);
+    try {
+      const { discovered } = await discoverAgents();
+      const q = discovered.filter((d) => d.quarantined);
+      setDiscoverMsg(
+        q.length
+          ? `Discovered ${discovered.length} agent(s); quarantined ${q[0].name} at risk ${q[0].risk_score}/100.`
+          : `Discovered ${discovered.length} agent(s); none required quarantine.`,
+      );
+      setReloadToken((t) => t + 1);
+    } catch {
+      setDiscoverMsg("Discovery failed — is the backend running?");
+    } finally {
+      setDiscovering(false);
+    }
+  };
 
   const rows = useMemo(() => agents ?? [], [agents]);
 
@@ -120,8 +144,20 @@ export function AgentsTable() {
             ))}
           </Select>
         </div>
-        <div className="ml-auto text-sm text-muted-foreground">{total} agents</div>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{total} agents</span>
+          <Button size="sm" variant="outline" onClick={onDiscover} disabled={discovering}>
+            <Radar className={discovering ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+            Discover Agents
+          </Button>
+        </div>
       </div>
+
+      {discoverMsg && (
+        <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+          {discoverMsg}
+        </div>
+      )}
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
