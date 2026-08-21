@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { AgentStatus, Severity } from "@/lib/api";
+import type { AgentStatus, ExecutionStatus, Severity } from "@/lib/api";
 
 const STATUS_VARIANT: Record<AgentStatus, React.ComponentProps<typeof Badge>["variant"]> = {
   ACTIVE: "low",
@@ -21,4 +21,18 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
       {severity}
     </Badge>
   );
+}
+
+const EXEC_VARIANT: Record<ExecutionStatus, React.ComponentProps<typeof Badge>["variant"]> = {
+  QUEUED: "secondary",
+  RUNNING: "default",
+  WAITING_APPROVAL: "moderate",
+  BLOCKED: "critical",
+  FAILED: "critical",
+  COMPLETED: "low",
+  CANCELLED: "outline",
+};
+
+export function ExecStatusBadge({ status }: { status: ExecutionStatus }) {
+  return <Badge variant={EXEC_VARIANT[status]}>{status.replace("_", " ")}</Badge>;
 }

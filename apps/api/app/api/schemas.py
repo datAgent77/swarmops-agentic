@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.domain.enums import PolicyAction
-from app.domain.models import Agent, AgentDependency, AgentVersion, User
+from app.domain.models import Agent, AgentDependency, AgentVersion, Execution, ToolCall, User
 
 
 class HealthResponse(BaseModel):
@@ -89,3 +89,25 @@ class PolicyDecisionOut(BaseModel):
     policy_name: str | None
     required_roles: list[str]
     reason: str
+
+
+class ToolCallRequestIn(BaseModel):
+    tool: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str | None = None
+
+
+class ExecutionCreate(BaseModel):
+    agent_id: str
+    input_summary: str = ""
+    tool_calls: list[ToolCallRequestIn] = Field(default_factory=list)
+
+
+class ExecutionListResponse(BaseModel):
+    total: int
+    items: list[Execution]
+
+
+class ExecutionDetailResponse(BaseModel):
+    execution: Execution
+    tool_calls: list[ToolCall]

@@ -88,6 +88,48 @@ export type RiskAssessment = {
   created_at: string;
 };
 
+export type ExecutionStatus =
+  | "QUEUED"
+  | "RUNNING"
+  | "WAITING_APPROVAL"
+  | "BLOCKED"
+  | "FAILED"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type Execution = {
+  id: string;
+  agent_id: string;
+  agent_version_id: string | null;
+  status: ExecutionStatus;
+  input_summary: string;
+  output_summary: string | null;
+  risk_context: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_ms: number | null;
+  trace_id: string;
+  estimated_cost: number;
+};
+
+export type ToolCall = {
+  id: string;
+  execution_id: string;
+  tool_id: string;
+  arguments_summary: string;
+  result_summary: string;
+  policy_decision: string | null;
+  started_at: string;
+  completed_at: string;
+  duration_ms: number;
+  idempotency_key: string | null;
+};
+
+export type ExecutionDetail = {
+  execution: Execution;
+  tool_calls: ToolCall[];
+};
+
 export type PolicyAction =
   | "ALLOW"
   | "DENY"
@@ -158,6 +200,14 @@ export function fetchAgent(id: string) {
 
 export function fetchPolicies() {
   return getJSON<Policy[]>("/api/v1/policies");
+}
+
+export function fetchExecutions() {
+  return getJSON<{ total: number; items: Execution[] }>("/api/v1/executions");
+}
+
+export function fetchExecution(id: string) {
+  return getJSON<ExecutionDetail>(`/api/v1/executions/${id}`);
 }
 
 export async function fetchRisk(agentId: string): Promise<RiskAssessment | null> {

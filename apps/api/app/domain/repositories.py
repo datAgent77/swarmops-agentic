@@ -16,10 +16,12 @@ from app.domain.models import (
     Agent,
     AgentDependency,
     AgentVersion,
+    Execution,
     Organization,
     Policy,
     RiskAssessment,
     Tool,
+    ToolCall,
     User,
 )
 
@@ -120,6 +122,31 @@ class PolicyRepository(ABC):
 
     @abstractmethod
     def list(self) -> Sequence[Policy]: ...
+
+
+class ExecutionRepository(ABC):
+    @abstractmethod
+    def add(self, execution: Execution) -> None: ...
+
+    @abstractmethod
+    def get(self, execution_id: str) -> Execution | None: ...
+
+    @abstractmethod
+    def update(self, execution: Execution) -> None: ...
+
+    @abstractmethod
+    def list(self, limit: int | None = None) -> Sequence[Execution]: ...
+
+
+class ToolCallRepository(ABC):
+    @abstractmethod
+    def add(self, tool_call: ToolCall) -> None: ...
+
+    @abstractmethod
+    def list_for_execution(self, execution_id: str) -> Sequence[ToolCall]: ...
+
+    @abstractmethod
+    def find_by_idempotency_key(self, key: str) -> ToolCall | None: ...
 
 
 class RiskAssessmentRepository(ABC):

@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { ExecutionsTable } from "@/components/executions/executions-table";
 
 export default function ExecutionsPage() {
-  return (
-    <PagePlaceholder
-      title="Executions"
-      description="Agent runs with state machine, tool calls, risk context, and traces."
-      phase="P04"
-    />
-  );
+  return <ExecutionsTable />;
 }

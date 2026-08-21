@@ -12,10 +12,12 @@ from app.domain.models import (
     Agent,
     AgentDependency,
     AgentVersion,
+    Execution,
     Organization,
     Policy,
     RiskAssessment,
     Tool,
+    ToolCall,
     User,
 )
 from app.domain.repositories import (
@@ -23,9 +25,11 @@ from app.domain.repositories import (
     AgentRepository,
     AgentVersionRepository,
     DependencyRepository,
+    ExecutionRepository,
     OrganizationRepository,
     PolicyRepository,
     RiskAssessmentRepository,
+    ToolCallRepository,
     ToolRepository,
     UserRepository,
 )
@@ -306,6 +310,70 @@ class SqliteRiskAssessmentRepository(_Base, RiskAssessmentRepository):
         return [self._to_model(r) for r in rows]
 
 
+class SqliteExecutionRepository(_Base, ExecutionRepository):
+    _COLUMNS = (
+        "id, agent_id, agent_version_id, status, input_summary, output_summary, risk_context, "
+        "started_at, completed_at, duration_ms, trace_id, estimated_cost"
+    )
+
+    def _params(self, e: Execution) -> tuple[Any, ...]:
+        return (
+            e.id, e.agent_id, e.agent_version_id, e.status.value, e.input_summary,
+            e.output_summary, e.risk_context,
+            e.started_at.isoformat() if e.started_at else None,
+            e.completed_at.isoformat() if e.completed_at else None,
+            e.duration_ms, e.trace_id, e.estimated_cost,
+        )
+
+    def add(self, execution: Execution) -> None:
+        self._write(
+            f"INSERT OR REPLACE INTO executions ({self._COLUMNS}) VALUES ({','.join('?' * 12)})",
+            self._params(execution),
+        )
+
+    def update(self, execution: Execution) -> None:
+        self.add(execution)
+
+    def get(self, execution_id: str) -> Execution | None:
+        row = self._c.execute("SELECT * FROM executions WHERE id=?", (execution_id,)).fetchone()
+        return Execution.model_validate(dict(row)) if row else None
+
+    def list(self, limit: int | None = None) -> Sequence[Execution]:
+        sql = "SELECT * FROM executions ORDER BY rowid DESC"
+        params: tuple[Any, ...] = ()
+        if limit is not None:
+            sql += " LIMIT ?"
+            params = (limit,)
+        rows = self._c.execute(sql, params).fetchall()
+        return [Execution.model_validate(dict(r)) for r in rows]
+
+
+class SqliteToolCallRepository(_Base, ToolCallRepository):
+    def add(self, t: ToolCall) -> None:
+        self._write(
+            "INSERT OR REPLACE INTO tool_calls (id, execution_id, tool_id, arguments_summary, "
+            "result_summary, policy_decision, started_at, completed_at, duration_ms, idempotency_key) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (
+                t.id, t.execution_id, t.tool_id, t.arguments_summary, t.result_summary,
+                t.policy_decision, t.started_at.isoformat(), t.completed_at.isoformat(),
+                t.duration_ms, t.idempotency_key,
+            ),
+        )
+
+    def list_for_execution(self, execution_id: str) -> Sequence[ToolCall]:
+        rows = self._c.execute(
+            "SELECT * FROM tool_calls WHERE execution_id=? ORDER BY rowid ASC", (execution_id,)
+        ).fetchall()
+        return [ToolCall.model_validate(dict(r)) for r in rows]
+
+    def find_by_idempotency_key(self, key: str) -> ToolCall | None:
+        row = self._c.execute(
+            "SELECT * FROM tool_calls WHERE idempotency_key=? ORDER BY rowid ASC LIMIT 1", (key,)
+        ).fetchone()
+        return ToolCall.model_validate(dict(row)) if row else None
+
+
 __all__ = [
     "severity_from_score",
     "SqliteOrganizationRepository",
@@ -316,4 +384,6 @@ __all__ = [
     "SqliteDependencyRepository",
     "SqlitePolicyRepository",
     "SqliteRiskAssessmentRepository",
+    "SqliteExecutionRepository",
+    "SqliteToolCallRepository",
 ]

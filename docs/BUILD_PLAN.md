@@ -34,7 +34,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P01 | Domain Model, Repositories & Demo Data | ✅ complete |
 | P02 | Deterministic Risk Engine | ✅ complete |
 | P03 | Policy Engine & Governance Rules | ✅ complete |
-| P04 | Execution State Machine & Safe Tool Layer | ⬜ pending |
+| P04 | Execution State Machine & Safe Tool Layer | ✅ complete |
 | P05 | Human Approval Workflow | ⬜ pending |
 | P06 | Quarantine, Discovery & Governance Lifecycle | ⬜ pending |
 | P07 | Google ADK + Gemini Governance Agent | ⬜ pending |
@@ -127,3 +127,25 @@ repository state — **preserve working functionality; do not rewrite from scrat
 > **Local-dev note:** the SQLite `swarmops.db` only seeds when empty. After pulling a
 > new phase, call `POST /api/v1/demo/reset` (or delete `swarmops.db`) to pick up new
 > seed data such as the policies added here.
+
+## P04 — delivered
+
+- Execution state machine (`domain/execution_state.py`): explicit transition table over
+  QUEUED/RUNNING/WAITING_APPROVAL/BLOCKED/FAILED/COMPLETED/CANCELLED; illegal moves raise
+  `InvalidStateTransition`; terminal states are dead-ends.
+- Safe demo tool layer (`infrastructure/tool_layer.py`): get_customer, get_order,
+  calculate_refund, execute_refund, send_email, get_salesforce_case. Every tool is a mock —
+  **`execute_refund` never contacts Stripe**; it returns `demo_refund_<key>`.
+- Execution + ToolCall models, repositories, tables. Execution service orchestrates
+  QUEUED→RUNNING→(tool calls)→COMPLETED, records tool calls, and finalizes duration/cost.
+- **Idempotency:** a state-changing tool call with a previously seen key is replayed from
+  the prior result — the tool never executes twice (no duplicate refunds).
+- **Quarantine guard:** a QUARANTINED agent cannot start an execution (409).
+- API: `GET /api/v1/executions`, `POST /api/v1/executions`, `GET /api/v1/executions/{id}`.
+- Frontend: Executions table (Execution/Agent/Status/Started/Duration/Risk/Trace) + execution
+  detail page with tool-call breakdown.
+- Tests: 47 backend total (+10): valid/invalid transitions, refund demo tool, all tools,
+  run+complete, idempotent replay, quarantine block, unknown tool, list/get. ruff + mypy + web green.
+
+> Policy-gated approvals (RUNNING→WAITING_APPROVAL and back) arrive in P05; the state
+> machine and the WAITING_APPROVAL state are already in place.

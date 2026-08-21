@@ -78,3 +78,13 @@ class PolicyAction(str, Enum):
     QUARANTINE = "QUARANTINE"
     REDACT = "REDACT"
     LOG_ONLY = "LOG_ONLY"
+
+
+class ExecutionStatus(str, Enum):
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    WAITING_APPROVAL = "WAITING_APPROVAL"
+    BLOCKED = "BLOCKED"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"

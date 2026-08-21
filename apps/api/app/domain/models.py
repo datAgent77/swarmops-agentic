@@ -15,6 +15,7 @@ from app.domain.enums import (
     AgentStatus,
     AutonomyLevel,
     DependencyTargetType,
+    ExecutionStatus,
     PolicyAction,
     RecommendedAction,
     Relationship,
@@ -119,6 +120,34 @@ class RiskAssessment(BaseModel):
     drivers: list[str]
     recommended_action: RecommendedAction
     created_at: datetime
+
+
+class Execution(BaseModel):
+    id: str
+    agent_id: str
+    agent_version_id: str | None
+    status: ExecutionStatus
+    input_summary: str
+    output_summary: str | None = None
+    risk_context: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    duration_ms: int | None = None
+    trace_id: str
+    estimated_cost: float = 0.0
+
+
+class ToolCall(BaseModel):
+    id: str
+    execution_id: str
+    tool_id: str
+    arguments_summary: str
+    result_summary: str
+    policy_decision: str | None = None
+    started_at: datetime
+    completed_at: datetime
+    duration_ms: int
+    idempotency_key: str | None = None
 
 
 class Policy(BaseModel):

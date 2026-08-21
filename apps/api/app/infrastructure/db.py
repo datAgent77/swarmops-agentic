@@ -82,6 +82,34 @@ CREATE TABLE IF NOT EXISTS agent_dependencies (
     risk_level       TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS executions (
+    id                TEXT PRIMARY KEY,
+    agent_id          TEXT NOT NULL,
+    agent_version_id  TEXT,
+    status            TEXT NOT NULL,
+    input_summary     TEXT NOT NULL,
+    output_summary    TEXT,
+    risk_context      TEXT,
+    started_at        TEXT,
+    completed_at      TEXT,
+    duration_ms       INTEGER,
+    trace_id          TEXT NOT NULL,
+    estimated_cost    REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tool_calls (
+    id                TEXT PRIMARY KEY,
+    execution_id      TEXT NOT NULL,
+    tool_id           TEXT NOT NULL,
+    arguments_summary TEXT NOT NULL,
+    result_summary    TEXT NOT NULL,
+    policy_decision   TEXT,
+    started_at        TEXT NOT NULL,
+    completed_at      TEXT NOT NULL,
+    duration_ms       INTEGER NOT NULL,
+    idempotency_key   TEXT
+);
+
 CREATE TABLE IF NOT EXISTS policies (
     id           TEXT PRIMARY KEY,
     name         TEXT NOT NULL,
@@ -121,9 +149,13 @@ CREATE INDEX IF NOT EXISTS idx_versions_agent ON agent_versions(agent_id);
 CREATE INDEX IF NOT EXISTS idx_deps_source ON agent_dependencies(source_agent_id);
 CREATE INDEX IF NOT EXISTS idx_risk_agent ON risk_assessments(agent_id);
 CREATE INDEX IF NOT EXISTS idx_policies_priority ON policies(priority);
+CREATE INDEX IF NOT EXISTS idx_toolcalls_exec ON tool_calls(execution_id);
+CREATE INDEX IF NOT EXISTS idx_toolcalls_idem ON tool_calls(idempotency_key);
 """
 
 _ALL_TABLES = (
+    "tool_calls",
+    "executions",
     "risk_assessments",
     "policies",
     "agent_dependencies",
