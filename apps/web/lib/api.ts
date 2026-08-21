@@ -63,6 +63,31 @@ export type AgentDetail = {
   dependencies: AgentDependency[];
 };
 
+export type RecommendedAction =
+  | "ALLOW"
+  | "MONITOR"
+  | "REQUIRE_APPROVAL"
+  | "SUSPEND"
+  | "QUARANTINE";
+
+export type RiskAssessment = {
+  id: string;
+  agent_id: string;
+  agent_version_id: string | null;
+  overall_score: number;
+  severity: Severity;
+  pii_score: number;
+  financial_score: number;
+  external_tool_score: number;
+  privilege_score: number;
+  autonomy_score: number;
+  prompt_score: number;
+  data_score: number;
+  drivers: string[];
+  recommended_action: RecommendedAction;
+  created_at: string;
+};
+
 export type FleetStats = {
   total_agents: number;
   active: number;
@@ -106,6 +131,19 @@ export function fetchAgents(filters: AgentFilters = {}) {
 
 export function fetchAgent(id: string) {
   return getJSON<AgentDetail>(`/api/v1/agents/${id}`);
+}
+
+export async function fetchRisk(agentId: string): Promise<RiskAssessment | null> {
+  const res = await fetch(`${API_URL}/api/v1/agents/${agentId}/risk`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`risk → HTTP ${res.status}`);
+  return res.json() as Promise<RiskAssessment>;
+}
+
+export async function assessRisk(agentId: string): Promise<RiskAssessment> {
+  const res = await fetch(`${API_URL}/api/v1/agents/${agentId}/assess-risk`, { method: "POST" });
+  if (!res.ok) throw new Error(`assess-risk → HTTP ${res.status}`);
+  return res.json() as Promise<RiskAssessment>;
 }
 
 export async function resetDemo() {

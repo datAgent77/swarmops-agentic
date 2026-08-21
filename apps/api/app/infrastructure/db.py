@@ -82,13 +82,33 @@ CREATE TABLE IF NOT EXISTS agent_dependencies (
     risk_level       TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS risk_assessments (
+    id                 TEXT PRIMARY KEY,
+    agent_id           TEXT NOT NULL,
+    agent_version_id   TEXT,
+    overall_score      INTEGER NOT NULL,
+    severity           TEXT NOT NULL,
+    pii_score          INTEGER NOT NULL,
+    financial_score    INTEGER NOT NULL,
+    external_tool_score INTEGER NOT NULL,
+    privilege_score    INTEGER NOT NULL,
+    autonomy_score     INTEGER NOT NULL,
+    prompt_score       INTEGER NOT NULL,
+    data_score         INTEGER NOT NULL,
+    drivers            TEXT NOT NULL,
+    recommended_action TEXT NOT NULL,
+    created_at         TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
 CREATE INDEX IF NOT EXISTS idx_agents_department ON agents(department);
 CREATE INDEX IF NOT EXISTS idx_versions_agent ON agent_versions(agent_id);
 CREATE INDEX IF NOT EXISTS idx_deps_source ON agent_dependencies(source_agent_id);
+CREATE INDEX IF NOT EXISTS idx_risk_agent ON risk_assessments(agent_id);
 """
 
 _ALL_TABLES = (
+    "risk_assessments",
     "agent_dependencies",
     "agent_versions",
     "tools",

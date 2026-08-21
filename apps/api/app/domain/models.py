@@ -15,6 +15,7 @@ from app.domain.enums import (
     AgentStatus,
     AutonomyLevel,
     DependencyTargetType,
+    RecommendedAction,
     Relationship,
     RiskLevel,
     Role,
@@ -97,3 +98,23 @@ class AgentDependency(BaseModel):
     target_id: str
     relationship: Relationship
     risk_level: RiskLevel
+
+
+class RiskAssessment(BaseModel):
+    id: str
+    agent_id: str
+    agent_version_id: str | None
+    overall_score: int
+    severity: RiskLevel
+    # Per-dimension breakdown. ``data_score`` carries the missing-approval-gate
+    # dimension per the RiskAssessment schema (see risk_engine dimension map).
+    pii_score: int
+    financial_score: int
+    external_tool_score: int
+    privilege_score: int
+    autonomy_score: int
+    prompt_score: int
+    data_score: int
+    drivers: list[str]
+    recommended_action: RecommendedAction
+    created_at: datetime

@@ -61,3 +61,11 @@ class Relationship(str, Enum):
     EXECUTE = "EXECUTE"
     CALL = "CALL"
     DELEGATE = "DELEGATE"
+
+
+class RecommendedAction(str, Enum):
+    ALLOW = "ALLOW"
+    MONITOR = "MONITOR"
+    REQUIRE_APPROVAL = "REQUIRE_APPROVAL"
+    SUSPEND = "SUSPEND"
+    QUARANTINE = "QUARANTINE"

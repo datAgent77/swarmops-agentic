@@ -13,6 +13,7 @@ from app.domain.models import (
     AgentDependency,
     AgentVersion,
     Organization,
+    RiskAssessment,
     Tool,
     User,
 )
@@ -22,6 +23,7 @@ from app.domain.repositories import (
     AgentVersionRepository,
     DependencyRepository,
     OrganizationRepository,
+    RiskAssessmentRepository,
     ToolRepository,
     UserRepository,
 )
@@ -234,6 +236,42 @@ class SqliteDependencyRepository(_Base, DependencyRepository):
         return [AgentDependency.model_validate(dict(r)) for r in rows]
 
 
+class SqliteRiskAssessmentRepository(_Base, RiskAssessmentRepository):
+    _COLUMNS = (
+        "id, agent_id, agent_version_id, overall_score, severity, pii_score, financial_score, "
+        "external_tool_score, privilege_score, autonomy_score, prompt_score, data_score, "
+        "drivers, recommended_action, created_at"
+    )
+
+    def _to_model(self, row: sqlite3.Row) -> RiskAssessment:
+        data = dict(row)
+        data["drivers"] = json.loads(data["drivers"])
+        return RiskAssessment.model_validate(data)
+
+    def add(self, a: RiskAssessment) -> None:
+        self._write(
+            f"INSERT OR REPLACE INTO risk_assessments ({self._COLUMNS}) VALUES ({','.join('?' * 15)})",
+            (
+                a.id, a.agent_id, a.agent_version_id, a.overall_score, a.severity.value,
+                a.pii_score, a.financial_score, a.external_tool_score, a.privilege_score,
+                a.autonomy_score, a.prompt_score, a.data_score, _dumps(a.drivers),
+                a.recommended_action.value, a.created_at.isoformat(),
+            ),
+        )
+
+    def latest_for_agent(self, agent_id: str) -> RiskAssessment | None:
+        row = self._c.execute(
+            "SELECT * FROM risk_assessments WHERE agent_id=? ORDER BY rowid DESC LIMIT 1", (agent_id,)
+        ).fetchone()
+        return self._to_model(row) if row else None
+
+    def list_for_agent(self, agent_id: str) -> Sequence[RiskAssessment]:
+        rows = self._c.execute(
+            "SELECT * FROM risk_assessments WHERE agent_id=? ORDER BY rowid DESC", (agent_id,)
+        ).fetchall()
+        return [self._to_model(r) for r in rows]
+
+
 __all__ = [
     "severity_from_score",
     "SqliteOrganizationRepository",
@@ -242,4 +280,5 @@ __all__ = [
     "SqliteAgentVersionRepository",
     "SqliteToolRepository",
     "SqliteDependencyRepository",
+    "SqliteRiskAssessmentRepository",
 ]

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SeverityBadge, StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
+import { RiskPanel } from "@/components/agents/risk-panel";
 import { fetchAgent, type AgentDetail as Detail } from "@/lib/api";
 
 const TABS = [
@@ -16,7 +17,7 @@ const TABS = [
 ];
 
 const FUTURE_TAB: Record<string, string> = {
-  Executions: "P04", Policies: "P03", Risk: "P02", Security: "P10", Audit: "P09",
+  Executions: "P04", Policies: "P03", Security: "P10", Audit: "P09",
 };
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -110,6 +111,9 @@ export function AgentDetail({ id }: { id: string }) {
                 No dependency metadata recorded. Full dependency graph and blast radius arrive in P08.
               </p>
             );
+          }
+          if (active === "Risk") {
+            return <RiskPanel agentId={agent.id} />;
           }
           if (active === "Versions") {
             return versions.length ? (

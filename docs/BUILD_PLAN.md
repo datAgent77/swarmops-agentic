@@ -32,7 +32,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 |-------|-------|--------|
 | P00 | Repository Foundation & Architecture | ✅ complete |
 | P01 | Domain Model, Repositories & Demo Data | ✅ complete |
-| P02 | Deterministic Risk Engine | ⬜ pending |
+| P02 | Deterministic Risk Engine | ✅ complete |
 | P03 | Policy Engine & Governance Rules | ⬜ pending |
 | P04 | Execution State Machine & Safe Tool Layer | ⬜ pending |
 | P05 | Human Approval Workflow | ⬜ pending |
@@ -81,3 +81,26 @@ repository state — **preserve working functionality; do not rewrite from scrat
   Versions live; later tabs phase-tagged).
 - Tests: 15 backend tests (repository CRUD + API + deterministic reset); ruff + mypy
   clean; frontend typecheck + lint + build green.
+
+## P02 — delivered
+
+- Deterministic risk engine (`domain/risk_engine.py`), pure and LLM-free. Seven
+  weighted dimensions summing to 100: PII 20, financial 20, production-write 15,
+  external-tools 10, autonomy 15, missing-approval-gate 10, prompt/tool-security 10.
+  Severity bands: LOW <25, MODERATE 25–49, HIGH 50–74, CRITICAL 75+.
+- **CustomerRefundAgent v2 = 87/100 CRITICAL → QUARANTINE**, from an explainable
+  breakdown (16+20+15+8+15+10+3) — not a hard-coded number.
+- `RiskAssessment` model + repository + table (`data_score` holds the
+  approval-gap dimension per the schema). Assessments are immutable and persisted.
+- Application service assembles the engine input from repositories, records the
+  assessment, and syncs the agent's `risk_score` to the computed value.
+- API: `POST /api/v1/agents/{id}/assess-risk`, `GET /api/v1/agents/{id}/risk`.
+- Frontend: Agent detail **Risk** tab — score, severity, recommended action, drivers,
+  per-dimension breakdown bars, and an explicit "deterministic score / AI explanation
+  is a future layer" note.
+- Tests: 23 backend total (+8): severity boundaries (24/25, 49/50, 74/75), refund=87
+  breakdown, low-risk stays LOW, missing-approval raises risk, API assess/get/sync/404.
+  ruff + mypy clean; frontend green.
+
+> **Invariant reinforced:** the engine is the sole authority on risk. Gemini (P07)
+> will explain but never alter a score, severity, or recommended action.

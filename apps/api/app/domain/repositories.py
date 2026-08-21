@@ -17,6 +17,7 @@ from app.domain.models import (
     AgentDependency,
     AgentVersion,
     Organization,
+    RiskAssessment,
     Tool,
     User,
 )
@@ -104,3 +105,14 @@ class DependencyRepository(ABC):
 
     @abstractmethod
     def list_for_agent(self, agent_id: str) -> list[AgentDependency]: ...
+
+
+class RiskAssessmentRepository(ABC):
+    @abstractmethod
+    def add(self, assessment: RiskAssessment) -> None: ...
+
+    @abstractmethod
+    def latest_for_agent(self, agent_id: str) -> RiskAssessment | None: ...
+
+    @abstractmethod
+    def list_for_agent(self, agent_id: str) -> Sequence[RiskAssessment]: ...
