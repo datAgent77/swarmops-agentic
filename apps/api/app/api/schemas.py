@@ -298,3 +298,16 @@ class ChangeProposalResponse(BaseModel):
 class ChangeProposalListResponse(BaseModel):
     total: int
     items: list[AgentChangeProposal]
+
+
+class IntegrationInfoOut(BaseModel):
+    key: str
+    name: str
+    category: str
+    status: str
+    detail: str
+    docs: str
+
+
+class IntegrationStatusResponse(BaseModel):
+    integrations: list[IntegrationInfoOut]

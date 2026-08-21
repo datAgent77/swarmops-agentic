@@ -43,7 +43,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P10 | Security Layer, Prompt Injection & Model Armor | ✅ complete |
 | P11 | Agent Version Intelligence & Self-Evolving Governance | ✅ complete |
 | P12 | Google Cloud Persistence, Pub/Sub & Cloud Run | ✅ complete |
-| P13 | Gemini Enterprise Agent Platform Adapters | ⬜ pending |
+| P13 | Gemini Enterprise Agent Platform Adapters | ✅ complete |
 | P14 | Demo Hardening, UX Polish & Submission Readiness | ⬜ pending |
 
 ## P06 note — keep the demo story in sync with seed data
@@ -345,3 +345,25 @@ approve → resume exactly once`) stays coherent.
 - No credentials committed; secrets live in Secret Manager.
 - Tests: 95 backend total (+4): event-bus selection, local default backend, Firestore
   optionality, and a full governed flow publishing all seven events. ruff + mypy green.
+
+## P13 — delivered
+
+- Adapter interfaces (`application/integrations.py`): AgentRegistryProvider,
+  AgentRuntimeProvider, MemoryProvider, AgentGatewayProvider, ModelArmorProvider,
+  ObservabilityProvider — with demo implementations (`Demo*Provider`). Real Google
+  integrations slot in behind the same interfaces without changing callers.
+- **Truthful status** (`IntegrationStatus`: CONNECTED / DEMO_MODE / NOT_CONFIGURED /
+  ERROR) computed from real signals — installed client, credentials, config, Cloud Run
+  `K_SERVICE`. A demo provider is **never** reported as CONNECTED.
+- Governance metadata (owner, department, risk, approval, governance status, policy
+  bindings, cost center, incident history) stays authoritative in SwarmOps even when a
+  Google Registry catalogs the agent.
+- Model Armor reuses the P10 security adapter; Observability reuses the P09 telemetry
+  backend; Firestore/Pub/Sub reuse the P12 backend selection — all reported truthfully.
+- API: `GET /api/v1/integrations/status` returns all twelve integrations with status,
+  detail, and how-to-enable docs.
+- Frontend: Integrations page grouped by category with truthful status badges (CONNECTED
+  / DEMO MODE / NOT CONFIGURED) and enable instructions.
+- Docs: `docs/integrations.md` (live vs simulated + how to enable) + ADR-005 (adapter pattern).
+- Tests: 99 backend total (+4): all expected integrations present, truthful local status,
+  no demo provider marked connected, every integration has enable docs. ruff + mypy + web green.

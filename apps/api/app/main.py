@@ -19,6 +19,7 @@ from app.api.routes import (
     governance,
     graph,
     health,
+    integrations,
     lifecycle,
     observability,
     organizations,
@@ -73,6 +74,7 @@ def create_app(container: RepositoryContainer | None = None) -> FastAPI:
     app.include_router(observability.router)
     app.include_router(security.router)
     app.include_router(proposals.router)
+    app.include_router(integrations.router)
     app.include_router(risk.router)
     app.include_router(policies.router)
     app.include_router(executions.router)

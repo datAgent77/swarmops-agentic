@@ -117,7 +117,7 @@ No secrets are committed; `.env` is gitignored.
 ## Status
 
 Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
-**Complete through P12** — 95 backend tests green; ruff + mypy clean; web build green.
+**Complete through P13** — 99 backend tests green; ruff + mypy clean; web build green.
 
 | Phase | Capability | Done |
 |-------|------------|:----:|
@@ -134,7 +134,8 @@ Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
 | P10 | Security scanner + Model Armor adapter (prompt injection / PII) | ✅ |
 | P11 | Version intelligence + self-evolving governance (v17 rejected) | ✅ |
 | P12 | Firestore + Pub/Sub adapters, Cloud Run + Terraform deploy | ✅ |
-| P13–P14 | Gemini Enterprise adapters, demo hardening & submission | ⬜ |
+| P13 | Gemini Enterprise adapters + truthful integration status | ✅ |
+| P14 | Demo hardening, guided demo & submission readiness | ⬜ |
 
 **What works today — the full governed arc runs end to end:** discover the rogue
 CustomerRefundAgent → it auto-assesses to 87/100 CRITICAL → policy quarantines it →

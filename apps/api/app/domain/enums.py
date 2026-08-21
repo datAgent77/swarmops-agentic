@@ -114,3 +114,10 @@ class ProposalDecision(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
+
+
+class IntegrationStatus(str, Enum):
+    CONNECTED = "CONNECTED"
+    DEMO_MODE = "DEMO_MODE"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
+    ERROR = "ERROR"

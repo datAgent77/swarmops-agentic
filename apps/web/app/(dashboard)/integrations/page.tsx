@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { IntegrationsView } from "@/components/integrations/integrations-view";
 
 export default function IntegrationsPage() {
-  return (
-    <PagePlaceholder
-      title="Integrations"
-      description="Truthful status for Gemini, Vertex AI, ADK, Cloud Run, and the Agent platform."
-      phase="P13"
-    />
-  );
+  return <IntegrationsView />;
 }

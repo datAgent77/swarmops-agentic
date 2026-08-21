@@ -283,6 +283,15 @@ export type ChangeProposalResponse = {
   explanation: { text: string; model_status: "LIVE" | "LOCAL_TEMPLATE"; model_name: string; provider: string };
 };
 
+export type IntegrationInfo = {
+  key: string;
+  name: string;
+  category: string;
+  status: "CONNECTED" | "DEMO_MODE" | "NOT_CONFIGURED" | "ERROR";
+  detail: string;
+  docs: string;
+};
+
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
 
 export type ApprovalRequest = {
@@ -436,6 +445,10 @@ export function fetchSecurityIncidents() {
 
 export function fetchSecurityOverview() {
   return getJSON<SecurityOverview>("/api/v1/security/overview");
+}
+
+export function fetchIntegrations() {
+  return getJSON<{ integrations: IntegrationInfo[] }>("/api/v1/integrations/status");
 }
 
 export async function proposeChange(agentId: string): Promise<ChangeProposalResponse> {
