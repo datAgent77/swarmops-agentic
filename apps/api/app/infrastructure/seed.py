@@ -186,18 +186,22 @@ def _generated_agents() -> list[Agent]:
 
 
 def _tools() -> list[Tool]:
-    def tool(tid, name, ttype, risk, desc, endpoint, perms):
+    def tool(tid, name, ttype, risk, desc, endpoint, perms, meta=None):
         return Tool(id=tid, name=name, type=ttype, risk_level=risk, description=desc,
-                    endpoint=endpoint, permissions=perms, metadata={})
+                    endpoint=endpoint, permissions=perms, metadata=meta or {})
     return [
         tool("tool-customer-db", "Customer Database", ToolType.DATABASE, RiskLevel.CRITICAL,
-             "Primary customer records store (contains PII).", "postgres://customers", ["read", "write"]),
+             "Primary customer records store (contains PII).", "postgres://customers",
+             ["read", "write"], {"pii": True}),
         tool("tool-salesforce", "Salesforce", ToolType.SAAS, RiskLevel.HIGH,
-             "CRM system of record for accounts and cases.", "https://api.salesforce.com", ["read"]),
+             "CRM system of record for accounts and cases.", "https://api.salesforce.com",
+             ["read"], {"pii": True}),
         tool("tool-stripe", "Stripe", ToolType.SAAS, RiskLevel.CRITICAL,
-             "Payment processor — can move real money.", "https://api.stripe.com", ["charge", "refund"]),
+             "Payment processor — can move real money.", "https://api.stripe.com",
+             ["charge", "refund"], {"financial": True}),
         tool("tool-refund-api", "Refund API", ToolType.API, RiskLevel.CRITICAL,
-             "Internal refund execution service.", "https://internal/refunds", ["execute"]),
+             "Internal refund execution service.", "https://internal/refunds",
+             ["execute"], {"financial": True, "production_write": True}),
         tool("tool-email", "Email", ToolType.INTERNAL_SERVICE, RiskLevel.MODERATE,
              "Transactional email sender.", "https://internal/email", ["send"]),
         tool("tool-order-api", "Order API", ToolType.API, RiskLevel.LOW,
@@ -247,6 +251,27 @@ def _refund_dependencies() -> list[AgentDependency]:
         AgentDependency(id=f"dep-refund-{i}", source_agent_id=src, target_type=tt,
                         target_id=tid, relationship=rel, risk_level=rl)
         for i, (tid, tt, rel, rl) in enumerate(spec)
+    ]
+
+
+def _extra_dependencies() -> list[AgentDependency]:
+    """A few more edges so the fleet-wide graph is a small network, not a lone star."""
+    spec = [
+        ("agent-invoice-processing", "tool-customer-db", DependencyTargetType.DATABASE,
+         Relationship.READ, RiskLevel.HIGH),
+        ("agent-invoice-processing", "tool-email", DependencyTargetType.TOOL,
+         Relationship.EXECUTE, RiskLevel.MODERATE),
+        ("agent-lead-qualification", "tool-salesforce", DependencyTargetType.EXTERNAL_API,
+         Relationship.READ, RiskLevel.HIGH),
+        ("agent-procurement", "tool-order-api", DependencyTargetType.TOOL,
+         Relationship.READ, RiskLevel.LOW),
+        ("agent-procurement", "tool-email", DependencyTargetType.TOOL,
+         Relationship.EXECUTE, RiskLevel.MODERATE),
+    ]
+    return [
+        AgentDependency(id=f"dep-extra-{i}", source_agent_id=src, target_type=tt,
+                        target_id=tid, relationship=rel, risk_level=rl)
+        for i, (src, tid, tt, rel, rl) in enumerate(spec)
     ]
 
 
@@ -325,7 +350,7 @@ def apply_seed(container: RepositoryContainer) -> None:
     for version in _named_versions():
         container.agent_versions.add(version)
 
-    for dep in _refund_dependencies():
+    for dep in _refund_dependencies() + _extra_dependencies():
         container.dependencies.add(dep)
 
     for pol in _policies():

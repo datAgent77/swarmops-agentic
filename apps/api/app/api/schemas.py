@@ -170,3 +170,37 @@ class GovernanceAnalysisResponse(BaseModel):
     risk: RiskAssessment
     policy: PolicyDecisionOut
     explanation: ExplanationOut
+
+
+class GraphNodeOut(BaseModel):
+    id: str
+    type: str
+    label: str
+    risk_level: str | None = None
+    connection: str = "metadata"
+    meta: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphEdgeOut(BaseModel):
+    id: str
+    source: str
+    target: str
+    relationship: str
+    risk_level: str
+    dangerous: bool
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNodeOut]
+    edges: list[GraphEdgeOut]
+
+
+class BlastRadiusResponse(BaseModel):
+    agent_id: str
+    pii_reachable: bool
+    financial_action_reachable: bool
+    production_write_path: bool
+    external_exfiltration_path: bool
+    privileged_downstream_agents: list[str]
+    reachable_nodes: int
+    indicators: list[str]

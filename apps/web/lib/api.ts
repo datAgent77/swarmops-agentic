@@ -142,6 +142,37 @@ export type ExecutionDetail = {
   tool_calls: ToolCall[];
 };
 
+export type GraphNode = {
+  id: string;
+  type: string;
+  label: string;
+  risk_level: string | null;
+  connection: string;
+  meta: Record<string, unknown>;
+};
+
+export type GraphEdge = {
+  id: string;
+  source: string;
+  target: string;
+  relationship: string;
+  risk_level: string;
+  dangerous: boolean;
+};
+
+export type GraphResponse = { nodes: GraphNode[]; edges: GraphEdge[] };
+
+export type BlastRadius = {
+  agent_id: string;
+  pii_reachable: boolean;
+  financial_action_reachable: boolean;
+  production_write_path: boolean;
+  external_exfiltration_path: boolean;
+  privileged_downstream_agents: string[];
+  reachable_nodes: number;
+  indicators: string[];
+};
+
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
 
 export type ApprovalRequest = {
@@ -253,6 +284,18 @@ export function fetchExecutions() {
 
 export function fetchExecution(id: string) {
   return getJSON<ExecutionDetail>(`/api/v1/executions/${id}`);
+}
+
+export function fetchFleetGraph() {
+  return getJSON<GraphResponse>("/api/v1/graph");
+}
+
+export function fetchAgentGraph(agentId: string) {
+  return getJSON<GraphResponse>(`/api/v1/agents/${agentId}/graph`);
+}
+
+export function fetchBlastRadius(agentId: string) {
+  return getJSON<BlastRadius>(`/api/v1/agents/${agentId}/blast-radius`);
 }
 
 export type Persona = { id: string; name: string; email: string; role: string };

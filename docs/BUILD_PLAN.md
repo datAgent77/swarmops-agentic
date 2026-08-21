@@ -38,7 +38,7 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P05 | Human Approval Workflow | ✅ complete |
 | P06 | Quarantine, Discovery & Governance Lifecycle | ✅ complete |
 | P07 | Google ADK + Gemini Governance Agent | ✅ complete |
-| P08 | Agent Dependency Graph & Blast Radius | ⬜ pending |
+| P08 | Agent Dependency Graph & Blast Radius | ✅ complete |
 | P09 | Audit Trail & OpenTelemetry Observability | ⬜ pending |
 | P10 | Security Layer, Prompt Injection & Model Armor | ⬜ pending |
 | P11 | Agent Version Intelligence & Self-Evolving Governance | ⬜ pending |
@@ -235,3 +235,22 @@ approve → resume exactly once`) stays coherent.
 - Tests: 65 backend total (+6): fixed tool allowlist, set_agent_status can't override,
   AI can't override QUARANTINE, AI can't override DENY, Gemini-unavailable fallback, 404.
   Model calls are never made in tests (injected mock/local). ruff + mypy + web build green.
+
+## P08 — delivered
+
+- Graph service (`application/graph_service.py`): typed nodes (agent, tool, database,
+  external_api, model, mcp) and edges (READ/WRITE/EXECUTE/CALL/DELEGATE). Every node is
+  dependency **metadata** — no live integration is implied (the demo tools are mocks).
+- CustomerRefundAgent graph shows exactly Customer Database, Salesforce, Stripe, Refund
+  API, Email (+ a derived model node). Fleet graph is a small network (extra seeded
+  edges for a few agents), not a lone star.
+- Deterministic **blast radius**: PII reachable, financial action reachable,
+  production-write path, external exfiltration path, privileged downstream agents,
+  reachable-node count. For the refund agent all four hazard flags fire.
+- API: `GET /api/v1/graph`, `GET /api/v1/agents/{id}/graph`,
+  `GET /api/v1/agents/{id}/blast-radius`.
+- Frontend: React Flow renderer (zoom/pan/fit/minimap, node-type colors, dangerous-path
+  highlighting, legend, click-to-inspect). Agent Graph page shows the fleet; the agent
+  detail Dependencies tab shows the agent graph + blast-radius chips.
+- Tests: 71 backend total (+6): refund graph dependencies, node-type classification,
+  fleet network, blast-radius flags, benign agent, 404. ruff + mypy + web build green.

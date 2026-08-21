@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { SeverityBadge, StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { RiskPanel } from "@/components/agents/risk-panel";
+import { AgentGraphPanel } from "@/components/graph/agent-graph-panel";
 import { activateAgent, fetchAgent, type AgentDetail as Detail } from "@/lib/api";
 
 // The demo reactivation actor is the platform admin persona (privileged).
@@ -123,9 +124,12 @@ export function AgentDetail({ id }: { id: string }) {
             );
           }
           if (active === "Dependencies") {
-            return dependencies.length ? (
-              <Card className="overflow-hidden">
-                <table className="w-full text-sm">
+            return (
+              <div className="space-y-4">
+                <AgentGraphPanel agentId={agent.id} />
+                {dependencies.length > 0 && (
+                  <Card className="overflow-hidden">
+                    <table className="w-full text-sm">
                   <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 font-medium">Target</th>
@@ -145,11 +149,9 @@ export function AgentDetail({ id }: { id: string }) {
                     ))}
                   </tbody>
                 </table>
-              </Card>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No dependency metadata recorded. Full dependency graph and blast radius arrive in P08.
-              </p>
+                  </Card>
+                )}
+              </div>
             );
           }
           if (active === "Risk") {

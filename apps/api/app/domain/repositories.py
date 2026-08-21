@@ -111,6 +111,9 @@ class DependencyRepository(ABC):
     @abstractmethod
     def list_for_agent(self, agent_id: str) -> list[AgentDependency]: ...
 
+    @abstractmethod
+    def list_all(self) -> Sequence[AgentDependency]: ...
+
 
 class PolicyRepository(ABC):
     @abstractmethod

@@ -246,6 +246,10 @@ class SqliteDependencyRepository(_Base, DependencyRepository):
         ).fetchall()
         return [AgentDependency.model_validate(dict(r)) for r in rows]
 
+    def list_all(self) -> Sequence[AgentDependency]:
+        rows = self._c.execute("SELECT * FROM agent_dependencies ORDER BY rowid ASC").fetchall()
+        return [AgentDependency.model_validate(dict(r)) for r in rows]
+
 
 class SqlitePolicyRepository(_Base, PolicyRepository):
     def _to_model(self, row: sqlite3.Row) -> Policy:
