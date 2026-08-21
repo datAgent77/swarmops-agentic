@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, Field, computed_field
 
 from app.domain.enums import (
     AgentStatus,
@@ -137,7 +137,7 @@ class Execution(BaseModel):
     trace_id: str
     estimated_cost: float = 0.0
     # Tool calls deferred while the execution waits for approval (run on resume).
-    pending_actions: list[dict[str, Any]] = []
+    pending_actions: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ToolCall(BaseModel):
@@ -176,7 +176,7 @@ class Policy(BaseModel):
     condition: dict[str, Any]
     action: PolicyAction
     # Action metadata (e.g. {"roles": ["BUSINESS_APPROVER"]} for REQUIRE_APPROVAL).
-    parameters: dict[str, Any] = {}
+    parameters: dict[str, Any] = Field(default_factory=dict)
     enabled: bool = True
     created_by: str
     created_at: datetime

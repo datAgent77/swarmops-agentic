@@ -116,7 +116,24 @@ No secrets are committed; `.env` is gitignored.
 
 ## Status
 
-**P00 complete** — foundation only. Health/status endpoints, the operational shell,
-tooling, Docker, and docs are in place. Business features begin in P01.
+Built iteratively in phases (see [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)).
+**Complete through P05** — 53 backend tests green; ruff + mypy clean; web build green.
+
+| Phase | Capability | Done |
+|-------|------------|:----:|
+| P00 | Monorepo foundation, health/status, operational shell | ✅ |
+| P01 | Domain model, repositories, deterministic 127-agent AcmeCorp seed | ✅ |
+| P02 | Deterministic risk engine (CustomerRefundAgent = 87/100 CRITICAL) | ✅ |
+| P03 | Deterministic policy engine (JSON conditions, no `eval`) | ✅ |
+| P04 | Execution state machine + safe (mock) tool layer + idempotency | ✅ |
+| P05 | Durable human approval workflow (two-stage $650 refund) | ✅ |
+| P06–P14 | Discovery/quarantine, ADK+Gemini, graph, audit, security, cloud | ⬜ |
+
+**What works today:** browse the 127-agent fleet with live risk severities; run the
+deterministic risk engine per agent; view and evaluate governance policies; start
+governed executions through the state machine (quarantined agents are blocked;
+state-changing tools are idempotent); and drive a full two-stage human approval on a
+$650 refund that resumes and executes **exactly once**. No LLM sits in the
+authorization path — governance is deterministic; Gemini (P07) will explain, never override.
 
 Built for Google All Things Agentic Hackathon 2026.

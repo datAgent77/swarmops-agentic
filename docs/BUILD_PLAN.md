@@ -46,6 +46,16 @@ repository state — **preserve working functionality; do not rewrite from scrat
 | P13 | Gemini Enterprise Agent Platform Adapters | ⬜ pending |
 | P14 | Demo Hardening, UX Polish & Submission Readiness | ⬜ pending |
 
+## P06 note — keep the demo story in sync with seed data
+
+CustomerRefundAgent is seeded ACTIVE with risk_score 72. The demo narrative needs a
+**newly discovered rogue v2** that assesses to ~87 CRITICAL and is auto-quarantined.
+In P06, model this explicitly: the discovery flow introduces/《re-discovers》the rogue
+v2 (DISCOVERED → PENDING_REVIEW → risk → policy → QUARANTINED) rather than the seed
+pre-quarantining it. Keep the seed's initial state distinct from the discovered rogue
+state so the demo (`discover → assess → quarantine → govern → execute → pause →
+approve → resume exactly once`) stays coherent.
+
 ## Non-negotiable principles
 
 - **Deterministic governance decides.** No LLM is in the authorization path.
