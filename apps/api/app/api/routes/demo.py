@@ -20,6 +20,6 @@ class ResetResponse(BaseModel):
 async def reset_demo(
     container: RepositoryContainer = Depends(get_container),
 ) -> ResetResponse:
-    """Wipe and deterministically recreate the AcmeCorp demo dataset."""
+    """Wipe and deterministically recreate the SaitALCorp demo dataset."""
     container.reset()
     return ResetResponse(status="reset", total_agents=container.agents.count_total())

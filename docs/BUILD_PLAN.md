@@ -80,7 +80,7 @@ approve → resume exactly once`) stays coherent.
   Relationship). Severity is a derived band shared with P02.
 - Repository interfaces (ports) in `domain/repositories.py`; SQLite implementations in
   `infrastructure/` behind a `RepositoryContainer` (Firestore variant lands in P12).
-- Deterministic AcmeCorp seed: exactly **127 agents / 43 active / 9 high-risk / 3
+- Deterministic SaitALCorp seed: exactly **127 agents / 43 active / 9 high-risk / 3
   quarantined**, 8 named agents (with versions), 6 tools, and CustomerRefundAgent's
   5 dependencies. No wall-clock/randomness, so `/demo/reset` is byte-stable.
 - API: `GET /api/v1/agents` (filters: status, department, risk, search, limit/offset),

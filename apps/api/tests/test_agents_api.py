@@ -37,7 +37,7 @@ def test_agent_detail(client: TestClient) -> None:
 
 def test_organization_current_stats(client: TestClient) -> None:
     body = client.get("/api/v1/organizations/current").json()
-    assert body["name"] == "AcmeCorp"
+    assert body["name"] == "SaitALCorp"
     stats = body["stats"]
     assert stats["total_agents"] == 127
     assert stats["active"] == 43

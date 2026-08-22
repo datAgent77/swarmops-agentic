@@ -1,4 +1,4 @@
-"""Deterministic demo seed for AcmeCorp.
+"""Deterministic demo seed for SaitALCorp.
 
 Produces a fixed fleet whose aggregate metrics are exactly:
 
@@ -389,7 +389,7 @@ def _recent_activity() -> list[AuditEvent]:
 
 
 def apply_seed(container: RepositoryContainer) -> None:
-    org = Organization(id=ORG_ID, name="AcmeCorp", slug="acmecorp", created_at=BASE)
+    org = Organization(id=ORG_ID, name="SaitALCorp", slug="saitalcorp", created_at=BASE)
     container.organizations.add(org)
 
     for user in _personas():

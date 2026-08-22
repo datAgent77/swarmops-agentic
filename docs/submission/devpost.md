@@ -40,7 +40,7 @@ The flagship end-to-end arc, all driven from a **Guided Demo** page against real
 
 Supporting capabilities (every screen is production-ready):
 
-- **Fleet & risk:** 127-agent AcmeCorp fleet with a deterministic, explainable 0–100 risk
+- **Fleet & risk:** 127-agent SaitALCorp fleet with a deterministic, explainable 0–100 risk
   engine (7 weighted dimensions) and a SOC-style Overview (risk posture + status + recent activity).
 - **Dependency graph & blast radius** (React Flow): every tool/DB/API/model an agent reaches,
   with dangerous-path highlighting and deterministic blast-radius indicators.
@@ -75,7 +75,7 @@ gcloud `deploy.sh`; 103 backend tests (pytest), ruff + mypy clean.
 
 ## Data sources
 
-The demo runs on a **deterministic seed** (AcmeCorp: 127 agents · 43 active · 9 high-risk ·
+The demo runs on a **deterministic seed** (SaitALCorp: 127 agents · 43 active · 9 high-risk ·
 3 quarantined) so every run is reproducible. The mock tool layer (customer/order/refund/
 email/Salesforce) is entirely simulated — `execute_refund` never contacts Stripe. No real
 customer or third-party data is used.

@@ -19,7 +19,7 @@ export function Topbar() {
     <header className="flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur">
       <h1 className="text-lg font-semibold tracking-tight">{titleForPath(pathname)}</h1>
       <div className="flex items-center gap-3">
-        <Badge variant="secondary">AcmeCorp</Badge>
+        <Badge variant="secondary">SaitALCorp</Badge>
         <Badge variant="low">Demo Mode</Badge>
       </div>
     </header>

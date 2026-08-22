@@ -121,7 +121,7 @@ export function SettingsView() {
             <RotateCcw className={resetting ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Reset demo
           </Button>
           <span className="text-sm text-muted-foreground">
-            Restores the deterministic AcmeCorp dataset (127 agents · 43 active · 9 high-risk · 3 quarantined).
+            Restores the deterministic SaitALCorp dataset (127 agents · 43 active · 9 high-risk · 3 quarantined).
           </span>
         </CardContent>
       </Card>
