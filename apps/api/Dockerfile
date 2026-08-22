@@ -7,11 +7,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Copy source, then install the package with the Google Cloud + OpenTelemetry extras
-# so the deployed image can use Firestore, Pub/Sub, and Cloud Trace.
+# Copy source, then install the package with the Google Cloud + OpenTelemetry + AI
+# extras so the deployed image can use Firestore, Pub/Sub, Cloud Trace, and run the
+# GovernanceAgent on Google ADK with live Gemini (GenAI SDK / Vertex AI).
 COPY pyproject.toml ./
 COPY app ./app
-RUN pip install --upgrade pip && pip install ".[gcp,otel]"
+RUN pip install --upgrade pip && pip install ".[gcp,otel,ai]"
 
 # Cloud Run provides $PORT; default to 8080 locally.
 ENV PORT=8080

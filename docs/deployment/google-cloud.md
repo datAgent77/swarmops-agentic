@@ -80,6 +80,7 @@ similarly and set `--set-secrets GEMINI_API_KEY=swarmops-gemini-key:latest` plus
 | `EVENT_BUS` | `pubsub` |
 | `GOOGLE_CLOUD_PROJECT` | your project id |
 | `GOOGLE_GENAI_USE_VERTEXAI` | `true` (or `false` + `GEMINI_API_KEY`) |
+| `GOOGLE_CLOUD_LOCATION` | **`global`** for Gemini 3.5 via Vertex AI (regional endpoints may lack the 3.5 models) |
 | `GEMINI_MODEL` | `gemini-3.5-flash` |
 | `OTEL_ENABLED` | `true` |
 | `MODEL_ARMOR_ENABLED` | `true` to use Model Armor (needs the client + access) |
