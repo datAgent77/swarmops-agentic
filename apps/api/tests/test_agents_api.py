@@ -38,12 +38,16 @@ def test_agent_detail(client: TestClient) -> None:
 def test_organization_current_stats(client: TestClient) -> None:
     body = client.get("/api/v1/organizations/current").json()
     assert body["name"] == "AcmeCorp"
-    assert body["stats"] == {
-        "total_agents": 127,
-        "active": 43,
-        "high_risk": 9,
-        "quarantined": 3,
-    }
+    stats = body["stats"]
+    assert stats["total_agents"] == 127
+    assert stats["active"] == 43
+    assert stats["high_risk"] == 9
+    assert stats["quarantined"] == 3
+    # Severity + status breakdowns for the Overview dashboard.
+    assert sum(stats["by_severity"].values()) == 127
+    assert stats["by_severity"]["CRITICAL"] == 3
+    assert stats["by_status"]["ACTIVE"] == 43
+    assert sum(stats["by_status"].values()) == 127
 
 
 def test_users_endpoint(client: TestClient) -> None:

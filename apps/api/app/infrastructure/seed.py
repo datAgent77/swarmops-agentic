@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 
 from app.domain.enums import (
     AgentStatus,
+    AuditActorType,
     AutonomyLevel,
     DependencyTargetType,
     PolicyAction,
@@ -29,6 +30,7 @@ from app.domain.models import (
     Agent,
     AgentDependency,
     AgentVersion,
+    AuditEvent,
     Organization,
     Policy,
     Tool,
@@ -41,6 +43,9 @@ if TYPE_CHECKING:
 
 # Fixed clock so the dataset is byte-stable across resets.
 BASE = datetime(2026, 1, 6, 9, 0, tzinfo=UTC)
+# Fixed "now" anchor for last-active timestamps — clusters activity in the demo week
+# while staying deterministic (the frontend renders these as relative time).
+ACTIVITY_BASE = datetime(2026, 8, 22, 7, 0, tzinfo=UTC)
 ORG_ID = "org-acmecorp"
 
 # Target metrics — asserted at the end of seeding.
@@ -120,12 +125,13 @@ def _named_agents() -> list[Agent]:
     for idx, row in enumerate(_NAMED):
         (aid, name, dept, status, autonomy, risk, version, owner, pidx, fw, rt, desc) = row
         provider, model = PROVIDER_MODELS[pidx]
-        created = BASE + timedelta(days=idx)
+        created = ACTIVITY_BASE - timedelta(days=55 - idx * 5)
+        updated = ACTIVITY_BASE - timedelta(minutes=idx * 13 + 3)
         agents.append(Agent(
             id=aid, organization_id=ORG_ID, name=name, description=desc, owner_id=owner,
             department=dept, status=status, autonomy_level=autonomy, risk_score=risk,
             current_version=version, runtime=rt, framework=fw, model_provider=provider,
-            model_name=model, created_at=created, updated_at=created + timedelta(days=1),
+            model_name=model, created_at=created, updated_at=updated,
         ))
     return agents
 
@@ -168,7 +174,8 @@ def _generated_agents() -> list[Agent]:
         risk = score if score >= 0 else 5 + (idx * 13) % 44   # 5..48, always < HIGH_RISK_FLOOR
         owner = ["user-dana-dev", "user-blair-business", "user-morgan-finance",
                  "user-sam-security", "user-alex-admin"][idx % 5]
-        created = BASE + timedelta(days=idx)
+        created = ACTIVITY_BASE - timedelta(days=25 + (idx % 100))
+        updated = ACTIVITY_BASE - timedelta(minutes=idx * 11 + 5)
         quarantine_reason = (
             "High-risk agent held under governance (seeded baseline)."
             if status is AgentStatus.QUARANTINED else None
@@ -179,7 +186,7 @@ def _generated_agents() -> list[Agent]:
             department=dept, status=status, autonomy_level=autonomy, risk_score=risk,
             current_version=f"v{1 + idx % 5}", runtime=RUNTIMES[idx % len(RUNTIMES)],
             framework=FRAMEWORKS[idx % len(FRAMEWORKS)], model_provider=provider,
-            model_name=model, created_at=created, updated_at=created + timedelta(days=1),
+            model_name=model, created_at=created, updated_at=updated,
             quarantine_reason=quarantine_reason,
         ))
     return agents
@@ -356,6 +363,31 @@ def _policies() -> list[Policy]:
     ]
 
 
+def _recent_activity() -> list[AuditEvent]:
+    """A little recent governance history so the Overview/Audit look alive on reset."""
+    # (minutes-ago, action, resource_type, resource_id, decision, reason)
+    rows = [
+        (4, "security.blocked", "security_incident", "sec-seed-01", "BLOCKED",
+         "PROMPT_INJECTION: instruction override"),
+        (11, "agent.quarantined", "agent", "agent-009", "QUARANTINE",
+         "Rogue Financial Agent: risk 88 without approval gate"),
+        (23, "policy.evaluated", "agent", "agent-procurement", "ALLOW",
+         "Small Refund"),
+        (37, "risk.assessed", "agent", "agent-invoice-processing", "MODERATE",
+         "score 46"),
+        (52, "agent.discovered", "agent", "agent-005", None,
+         "routine fleet discovery scan"),
+    ]
+    return [
+        AuditEvent(
+            id=f"audit-seed-{i:02d}", organization_id=ORG_ID, actor_type=AuditActorType.SYSTEM,
+            action=action, resource_type=rtype, resource_id=rid, decision=decision,
+            reason=reason, timestamp=ACTIVITY_BASE - timedelta(minutes=mins),
+        )
+        for i, (mins, action, rtype, rid, decision, reason) in enumerate(reversed(rows))
+    ]
+
+
 def apply_seed(container: RepositoryContainer) -> None:
     org = Organization(id=ORG_ID, name="AcmeCorp", slug="acmecorp", created_at=BASE)
     container.organizations.add(org)
@@ -378,6 +410,9 @@ def apply_seed(container: RepositoryContainer) -> None:
 
     for pol in _policies():
         container.policies.add(pol)
+
+    for event in _recent_activity():
+        container.audit_events.add(event)
 
     _assert_metrics(agents)
 

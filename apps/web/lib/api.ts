@@ -336,6 +336,8 @@ export type FleetStats = {
   active: number;
   high_risk: number;
   quarantined: number;
+  by_severity: Record<string, number>;
+  by_status: Record<string, number>;
 };
 
 export type OrgCurrent = {

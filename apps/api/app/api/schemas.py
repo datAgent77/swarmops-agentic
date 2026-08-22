@@ -42,6 +42,8 @@ class FleetStatsOut(BaseModel):
     active: int
     high_risk: int
     quarantined: int
+    by_severity: dict[str, int] = Field(default_factory=dict)
+    by_status: dict[str, int] = Field(default_factory=dict)
 
 
 class OrganizationCurrentResponse(BaseModel):

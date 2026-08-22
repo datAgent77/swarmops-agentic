@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Radar, Search } from "lucide-react";
 
+import { relativeTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -196,7 +197,7 @@ export function AgentsTable() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{a.model_name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{a.runtime}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{a.updated_at.slice(0, 10)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{relativeTime(a.updated_at)}</td>
                 </tr>
               ))}
             </tbody>

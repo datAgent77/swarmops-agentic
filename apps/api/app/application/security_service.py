@@ -111,9 +111,12 @@ class SecurityOverview:
 def security_overview(container: RepositoryContainer, settings: Settings) -> SecurityOverview:
     incidents = list(container.security_incidents.list())
     quarantined = len(container.agents.list(_quarantined_query()))
+    # "Blocked actions" = security scans blocked + executions blocked by policy.
+    blocked_incidents = sum(1 for i in incidents if i.action == "BLOCKED")
     blocked_executions = sum(
         1 for e in container.executions.list() if e.status is ExecutionStatus.BLOCKED
     )
+    blocked_actions = blocked_incidents + blocked_executions
     return SecurityOverview(
         scanner_status=scanner_status(settings),
         open_critical_findings=sum(
@@ -126,7 +129,7 @@ def security_overview(container: RepositoryContainer, settings: Settings) -> Sec
         pii_leakage_attempts=sum(
             1 for i in incidents if SecurityCategory.PII_LEAKAGE.value in i.detected_categories
         ),
-        blocked_tool_calls=blocked_executions,
+        blocked_tool_calls=blocked_actions,
         quarantined_agents=quarantined,
         total_incidents=len(incidents),
     )

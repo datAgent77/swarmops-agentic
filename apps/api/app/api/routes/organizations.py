@@ -25,5 +25,6 @@ async def current_organization(
         stats=FleetStatsOut(
             total_agents=stats.total_agents, active=stats.active,
             high_risk=stats.high_risk, quarantined=stats.quarantined,
+            by_severity=stats.by_severity, by_status=stats.by_status,
         ),
     )
