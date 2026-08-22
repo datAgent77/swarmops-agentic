@@ -18,19 +18,28 @@ gcloud artifacts repositories describe "${REPO}" --location "${REGION}" --projec
   >/dev/null 2>&1 || gcloud artifacts repositories create "${REPO}" \
   --repository-format=docker --location "${REGION}" --project "${PROJECT_ID}"
 
+echo "==> Ensuring Firestore (native) database"
+gcloud firestore databases describe --project "${PROJECT_ID}" >/dev/null 2>&1 || \
+  gcloud firestore databases create --location "${REGION}" --type=firestore-native --project "${PROJECT_ID}"
+
+echo "==> Ensuring Pub/Sub topics (one per domain event)"
+for T in AgentDiscovered RiskAssessmentCompleted AgentQuarantined ApprovalRequested \
+         ApprovalGranted ToolCallCompleted ExecutionCompleted; do
+  gcloud pubsub topics create "swarmops-${T}" --project "${PROJECT_ID}" >/dev/null 2>&1 || true
+done
+
 echo "==> Building + pushing the API image (Cloud Build)"
 gcloud builds submit apps/api --tag "${REG}/api:latest" --project "${PROJECT_ID}"
 
 echo "==> Deploying API (Cloud Run, scale-to-zero)"
-# Proven working configuration. Gemini 3.5 is served from the Vertex AI **global**
-# endpoint (GOOGLE_CLOUD_LOCATION=global) — regional endpoints may not have it.
-# PERSISTENCE_BACKEND=firestore + EVENT_BUS=pubsub also work, but require a Firestore
-# database and Pub/Sub topics to exist first (Terraform provisions them, or create them
-# manually); local/in-memory is the zero-setup default used here.
+# Full live configuration (verified end to end). Gemini 3.5 is served from the Vertex AI
+# **global** endpoint (GOOGLE_CLOUD_LOCATION=global) — regional endpoints may not have it.
+# Firestore + Pub/Sub + Cloud Trace are provisioned above. Prefer this; to run with zero
+# GCP data services, set PERSISTENCE_BACKEND=local and EVENT_BUS=inmemory instead.
 gcloud run deploy swarmops-api --image "${REG}/api:latest" --region "${REGION}" \
   --platform managed --allow-unauthenticated --min-instances 0 --max-instances 4 \
   --memory 512Mi --cpu 1 --port 8080 --project "${PROJECT_ID}" \
-  --set-env-vars "ENVIRONMENT=production,PERSISTENCE_BACKEND=local,EVENT_BUS=inmemory,DEMO_MODE=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.5-flash,CORS_ORIGINS=http://localhost:3000"
+  --set-env-vars "ENVIRONMENT=production,PERSISTENCE_BACKEND=firestore,EVENT_BUS=pubsub,OTEL_ENABLED=true,DEMO_MODE=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.5-flash,CORS_ORIGINS=http://localhost:3000"
 
 API_URL="$(gcloud run services describe swarmops-api --region "${REGION}" --project "${PROJECT_ID}" --format 'value(status.url)')"
 echo "    API_URL=${API_URL}"
