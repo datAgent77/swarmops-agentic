@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { SettingsView } from "@/components/settings/settings-view";
 
 export default function SettingsPage() {
-  return (
-    <PagePlaceholder
-      title="Settings"
-      description="Organization, personas, demo controls, and environment configuration."
-      phase="P14"
-    />
-  );
+  return <SettingsView />;
 }

@@ -359,6 +359,19 @@ export type AgentFilters = {
   search?: string;
 };
 
+export type StatusInfo = {
+  service: string;
+  version: string;
+  environment: string;
+  demo_mode: boolean;
+  category: string;
+  tagline: string;
+};
+
+export function fetchStatus() {
+  return getJSON<StatusInfo>("/api/v1/status");
+}
+
 export function fetchOrgCurrent() {
   return getJSON<OrgCurrent>("/api/v1/organizations/current");
 }
